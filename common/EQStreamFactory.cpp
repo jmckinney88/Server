@@ -244,13 +244,12 @@ timeval sleep_time;
 
 					//newstr
 					EQStream *curstream = NULL;
-					if((stream_itr=Streams.find(temp))!=Streams.end())
-					EQStream *curstream = stream_itr->second;
+					if(stream_itr != Streams.end())
+					curstream = stream_itr->second;
 					//oldstr
 					EQOldStream *oldcurstream = NULL;
-
-					if((oldstream_itr=OldStreams.find(temp))!=OldStreams.end())
-					EQOldStream *oldcurstream = oldstream_itr->second;
+					if(oldstream_itr != OldStreams.end())
+					oldcurstream = oldstream_itr->second;
 
 					if(curstream != NULL)
 					{
@@ -279,9 +278,9 @@ timeval sleep_time;
 
 						if(oldcurstream) {
 							//oldcurstream->AddBytesRecv(length);
-							oldcurstream->CheckTimers();
 							oldcurstream->ParceEQPacket(length, buffer);
 							oldcurstream->SetLastPacketTime(Timer::GetCurrentTime());
+							oldcurstream->CheckTimers();
 							oldcurstream->ReleaseFromUse();
 						}
 					}
@@ -439,6 +438,7 @@ Timer DecayTimer(20);
 		oldcur = old_wants_write.begin();
 		oldend = old_wants_write.end();
 			for(; oldcur != oldend; oldcur++) {
+				(*oldcur)->CheckTimers();
 				(*oldcur)->SendPacketQueue();
 				(*oldcur)->ReleaseFromUse();
 				(*oldcur)->SetWriting(false);

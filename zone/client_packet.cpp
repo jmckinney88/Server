@@ -91,6 +91,7 @@ void MapOpcodes() {
 
 	//Now put all the opcodes into their home...
 	//Begin Connecting opcodes:
+	ConnectingOpcodes[OP_DataRate] = &Client::Handle_Connect_OP_SetDataRate;
 	ConnectingOpcodes[OP_ZoneEntry] = &Client::Handle_Connect_OP_ZoneEntry;
 	ConnectingOpcodes[OP_SetServerFilter] = &Client::Handle_Connect_OP_SetServerFilter;
 	ConnectingOpcodes[OP_SendAATable] = &Client::Handle_Connect_OP_SendAATable;
@@ -415,10 +416,6 @@ int Client::HandlePacket(const EQApplicationPacket *app)
 		return true;
 	}
 
-	#if EQDEBUG >= 9
-		std::cout << "Received 0x" << hex << setw(4) << setfill('0') << opcode << ", size=" << dec << app->size << std::endl;
-	#endif
-
 	#ifdef SOLAR
 		if(0 && opcode != OP_ClientUpdate)
 		{
@@ -496,6 +493,13 @@ int Client::HandlePacket(const EQApplicationPacket *app)
 	return(true);
 }
 
+void Client::Handle_Connect_OP_SetDataRate(const EQApplicationPacket *app)
+{
+	//Just ignore and prepare for ZoneEntry next for now.
+	return;
+}
+
+
 void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 {
 	if(app->size != sizeof(ClientZoneEntry_Struct))
@@ -510,6 +514,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	ClientVersion = Connection()->ClientVersion();
 	ClientVersionBit = 1 << (ClientVersion - 1);
+
+	if(ClientVersion == EQClientMac)
+		ClientVersionBit = 0;
 
 	// Antighost code
 	// tmp var is so the search doesnt find this object
@@ -9103,7 +9110,6 @@ bool Client::FinishConnState2(DBAsyncWork* dbaw) {
 
 	//This checksum should disappear once dynamic structs are in... each struct strategy will do it
 	CRC32::SetEQChecksum((unsigned char*)&m_pp, sizeof(PlayerProfile_Struct)-4);
-
 	outapp = new EQApplicationPacket(OP_PlayerProfile,sizeof(PlayerProfile_Struct));
 
 	// The entityid field in the Player Profile is used by the Client in relation to Group Leadership AA
@@ -9144,6 +9150,7 @@ bool Client::FinishConnState2(DBAsyncWork* dbaw) {
 	sze->player.spawn.curHp=1;
 	sze->player.spawn.NPC=0;
 	sze->player.spawn.z += 6;	//arbitrary lift, seems to help spawning under zone.
+	sze->player.spawn.zoneID = zone->GetZoneID();
 	outapp->priority = 6;
 	FastQueuePacket(&outapp);
 	//safe_delete(outapp);

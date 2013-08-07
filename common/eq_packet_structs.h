@@ -339,6 +339,7 @@ union
 	uint32 DestructibleUnk7;
 	uint8 DestructibleUnk8;
 	uint32 DestructibleUnk9;
+	uint32 zoneID; // for mac.
 
 };
 
@@ -356,6 +357,7 @@ struct ClientZoneEntry_Struct {
 /*0000*/	uint32	unknown00;
 /*0004*/	char	char_name[64];			// Character Name
 };
+
 
 /*
 ** Server Zone Entry Struct
