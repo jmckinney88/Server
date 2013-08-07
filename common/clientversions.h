@@ -1,6 +1,7 @@
 #ifndef CLIENTVERSIONS_H
 #define CLIENTVERSIONS_H
 
+static const uint32 BIT_OldClient = 0;
 static const uint32 BIT_Client62 = 1;
 static const uint32 BIT_Titanium = 2;
 static const uint32 BIT_SoF = 4;
@@ -16,12 +17,13 @@ static const uint32 BIT_AllClients = 0xFFFFFFFF;
 
 typedef enum {
 	EQClientUnknown = 0,
+	EQClientMac,
 	EQClient62,
 	EQClientTitanium,
 	EQClientSoF,
 	EQClientSoD,
 	EQClientUnderfoot,
-	EQClientRoF
+	EQClientRoF,
 } EQClientVersion;
 
 #endif /* CLIENTVERSIONS_H */

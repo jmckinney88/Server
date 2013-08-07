@@ -8055,3 +8055,4 @@ void Client::Consume(const Item_Struct *item, uint8 type, int16 slot, bool auto_
 #endif
    }
 }
+>>>>>>> .r586

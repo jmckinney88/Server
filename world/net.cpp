@@ -94,6 +94,7 @@ CommonProfiler _cp;
 #include "AdventureManager.h"
 #include "ucs.h"
 #include "queryserv.h"
+#include <vld.h>
 
 TimeoutManager timeout_manager;
 EQStreamFactory eqsf(WorldStream,9000);
@@ -388,6 +389,7 @@ int main(int argc, char** argv) {
 	InterserverTimer.Trigger();
 	uint8 ReconnectCounter = 100;
 	EQStream* eqs;
+	EQOldStream* eqos;
 	EmuTCPConnection* tcpc;
 	EQStreamInterface *eqsi;
 
@@ -403,6 +405,17 @@ int main(int argc, char** argv) {
 			in.s_addr = eqs->GetRemoteIP();
 			_log(WORLD__CLIENT, "New connection from %s:%d", inet_ntoa(in),ntohs(eqs->GetRemotePort()));
 			stream_identifier.AddStream(eqs);	//takes the stream
+		}
+
+		//check the factory for any new incoming streams.
+		while ((eqos = eqsf.PopOld())) {
+			//pull the stream out of the factory and give it to the stream identifier
+			//which will figure out what patch they are running, and set up the dynamic
+			//structures and opcodes for that patch.
+			struct in_addr	in;
+			in.s_addr = eqos->GetRemoteIP();
+			_log(WORLD__CLIENT, "New connection from %s:%d", inet_ntoa(in),ntohs(eqos->GetRemotePort()));
+			stream_identifier.AddOldStream(eqos);	//takes the stream
 		}
 
 		//give the stream identifier a chance to do its work....

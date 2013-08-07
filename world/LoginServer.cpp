@@ -274,27 +274,19 @@ void LoginServer::SendInfo() {
 void LoginServer::SendNewInfo() {
 	uint16 port;
 	const WorldConfig *Config=WorldConfig::get();
-
 	ServerPacket* pack = new ServerPacket;
-	pack->opcode = ServerOP_NewLSInfo;
-	pack->size = sizeof(ServerNewLSInfo_Struct);
+	pack->opcode = ServerOP_LSInfo;
+	pack->size = sizeof(ServerLSInfo_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
-	ServerNewLSInfo_Struct* lsi = (ServerNewLSInfo_Struct*) pack->pBuffer;
+	ServerLSInfo_Struct* lsi = (ServerLSInfo_Struct*) pack->pBuffer;
 	strcpy(lsi->protocolversion, EQEMU_PROTOCOL_VERSION);
 	strcpy(lsi->serverversion, LOGIN_VERSION);
 	strcpy(lsi->name, Config->LongName.c_str());
-	strcpy(lsi->shortname, Config->ShortName.c_str());
 	strcpy(lsi->account, LoginAccount);
 	strcpy(lsi->password, LoginPassword);
-	if (Config->WorldAddress.length())
-		strcpy(lsi->remote_address, Config->WorldAddress.c_str());
-	if (Config->LocalAddress.length())
-		strcpy(lsi->local_address, Config->LocalAddress.c_str());
-	else {
-		tcpc->GetSockName(lsi->local_address,&port);
-		WorldConfig::SetLocalAddress(lsi->local_address);
-	}
+	strcpy(lsi->address, Config->WorldAddress.c_str());
+	SendPacket(pack);
 	SendPacket(pack);
 	delete pack;
 }

@@ -71,6 +71,7 @@ SET(common_sources
 	patches/RoF.cpp
 	patches/Titanium.cpp
 	patches/Underfoot.cpp
+	patches/Mac.cpp
 	SocketLib/Base64.cpp
 	SocketLib/File.cpp
 	SocketLib/HttpdCookies.cpp
@@ -198,6 +199,9 @@ SET(common_headers
 	patches/SoF_opcode_list.h
 	patches/SoF_ops.h
 	patches/SoF_structs.h
+	patches/Mac.h
+	patches/Mac_structs.h
+	patches/Mac_ops.h
 	patches/SSDeclare.h
 	patches/SSDefine.h
 	patches/SSRegister.h
