@@ -11,20 +11,20 @@ struct Update_Struct {
   char description[0];
 };
 //Yeahlight: Old client struct (DO NOT DELETE)
-//struct ServerList_Struct {
-//	int16	numservers;
-//	int8	unknown1;
-//	int8	unknown2;
-//	int8	showusercount; // 0xFF = show numbers, 0x0 = show "UP"
-//	uchar	data[0];
-//};
-//Yeahlight: New client struct
 struct ServerList_Struct {
 	int16	numservers;
 	int8	unknown1;
 	int8	unknown2;
+	int8	showusercount; // 0xFF = show numbers, 0x0 = show "UP"
 	uchar	data[0];
 };
+//Yeahlight: New client struct
+//struct ServerList_Struct {
+//	int16	numservers;
+//	int8	unknown1;
+//	int8	unknown2;
+//	uchar	data[0];
+//};
 
 //Yeahlight: Old client struct (DO NOT DELETE)
 //struct ServerListServerFlags_Struct {
@@ -37,18 +37,18 @@ struct ServerList_Struct {
 //	sint32	usercount;
 //};
 //Yeahlight: New client struct
-/*
+
 struct ServerListServerFlags_Struct {
 	int8 greenname;
 	int32 usercount;
 	int8 unknown[8];
-}; -- this is not right, there is no padding... */
-
-//neorab: new new client server flags struct (for multiple servers)
-struct ServerListServerFlags_Struct {
-	int8 greenname;
-	int32 usercount;
 };
+//
+////neorab: new new client server flags struct (for multiple servers)
+//struct ServerListServerFlags_Struct {
+//	int8 greenname;
+//	int32 usercount;
+//};
 
 
 
