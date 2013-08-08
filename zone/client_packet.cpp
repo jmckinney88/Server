@@ -656,7 +656,6 @@ void Client::Handle_Connect_OP_ReqClientSpawn(const EQApplicationPacket *app)
 	FastQueuePacket(&outapp);
 	outapp = new EQApplicationPacket(OP_ClientReady, 0);
 	FastQueuePacket(&outapp);
-
 	// New for Secrets of Faydwer - Used in Place of OP_SendExpZonein
 	outapp = new EQApplicationPacket(OP_WorldObjectsSent, 0);
 	QueuePacket(outapp);
@@ -761,6 +760,15 @@ void Client::Handle_Connect_OP_SendExpZonein(const EQApplicationPacket *app)
 	//No idea why live sends this if even were not in a guild
 	SendGuildMOTD();
 	SpawnMercOnZone();
+
+	//Mac and earlier just skip client connected for some reason...
+	if(GetClientVersionBit() == 0)
+	{
+	conn_state = ClientReadyReceived;
+	CompleteConnect();
+	SendHPUpdate();
+	}
+
 
 	return;
 }
@@ -9164,12 +9172,9 @@ bool Client::FinishConnState2(DBAsyncWork* dbaw) {
 
 	////////////////////////////////////////////////////////////
 	// Zone Spawns Packet
-	if(GetClientVersion() > EQClientMac)
-	{
 	entity_list.SendZoneSpawnsBulk(this);
 	entity_list.SendZoneCorpsesBulk(this);
 	entity_list.SendZonePVPUpdates(this);	//hack until spawn struct is fixed.
-	}
 
 
 

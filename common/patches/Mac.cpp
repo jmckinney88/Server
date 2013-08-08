@@ -108,6 +108,14 @@ DECODE(OP_SendLoginInfo) {
 	FINISH_DIRECT_DECODE();
 }
 
+DECODE(OP_EnterWorld) {
+	SETUP_DIRECT_DECODE(EnterWorld_Struct, structs::EnterWorld_Struct);
+	strn0cpy(emu->name, eq->charname, 64);
+	emu->return_home = 0;
+	emu->tutorial = 0;
+	FINISH_DIRECT_DECODE();
+}
+
 ENCODE(OP_ZoneServerInfo) {
 	SETUP_DIRECT_ENCODE(ZoneServerInfo_Struct, structs::ZoneServerInfo_Struct);
 	strcpy(eq->ip, emu->ip);
@@ -543,15 +551,13 @@ ENCODE(OP_ZoneSpawns){
 	EQApplicationPacket* outapp = new EQApplicationPacket();
 	outapp->SetOpcode(OP_ZoneSpawns);
 	outapp->pBuffer = new uchar[sizeof(structs::Spawn_Struct)*entrycount];
-	outapp->size = DeflatePacket((unsigned char*)in->pBuffer, entrycount * sizeof(structs::NewSpawn_Struct), outapp->pBuffer, in->size);
+	outapp->size = DeflatePacket((unsigned char*)in->pBuffer, entrycount * sizeof(structs::NewSpawn_Struct), outapp->pBuffer, sizeof(structs::Spawn_Struct)*entrycount);
 	EncryptZoneSpawnPacket(outapp->pBuffer, outapp->size);
 
 	//kill off the emu structure and send the eq packet.
 	delete[] __emu_buffer;
 	delete in;
 	dest->FastQueuePacket(&outapp, ack_req);
-
-
 
 }
 

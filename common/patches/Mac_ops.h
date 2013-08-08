@@ -12,5 +12,6 @@ E(OP_NewSpawn)
 E(OP_ZoneSpawns)
 E(OP_SpawnDoor)
 E(OP_GuildsList)
+D(OP_EnterWorld)
 #undef E
 #undef D

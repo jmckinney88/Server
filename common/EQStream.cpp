@@ -1695,9 +1695,17 @@ void EQOldStream::IncomingARSP(uint16 dwARSP)
 		pack = ResendQueue.front();
 		while (!ResendQueue.empty() && pack && dwARSP - pack->dwARQ >= 0)
 		{
+			_log(NET__DEBUG,"Removing %i from resendQueue", pack->dwARQ);
 			packetspending--;
 			ResendQueue.pop();
 			safe_delete(pack);
+			if(!ResendQueue.empty())
+			pack = ResendQueue.front();
+			else
+			{
+			pack = NULL;
+			break;
+			}
 		}
 	}
 	if (ResendQueue.empty())
@@ -1877,6 +1885,7 @@ bool EQOldStream::ProcessPacket(EQOldPacket* pack, bool from_buffer)
 	else 
 	{
 		EQRawApplicationPacket *app = new EQRawApplicationPacket(pack->dwOpCode ,pack->pExtra, pack->dwExtraSize);   
+		_log(NET__DEBUG, "Received old opcode - 0x%x", app->GetRawOpcode());
 		OutQueue.push(app);
 		return true;
 	}
@@ -2175,9 +2184,8 @@ void EQOldStream::CheckTimers(void)
 			ResendQueue.push(pack);
 			packetspending++;
 			if(++(pack)->resend_count > 15) {
-			_log(NET__DEBUG, "Setting connection to disconnected; timeout via resend!");
-			_SendDisconnect();
-			Close();
+				_log(NET__DEBUG, "Dropping client, resend_count > 15 on ARQ - %i, SEQ: %i", pack->dwARQ, pack->dwSEQ);
+				Close();
 			}
 			q.pop();
 		}
