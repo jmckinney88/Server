@@ -28,6 +28,7 @@ namespace Mac {
 		#include "SSDeclare.h"
 		#include "Mac_ops.h"
 
+
 	};
 
 };

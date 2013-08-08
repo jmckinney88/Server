@@ -185,7 +185,8 @@ struct ServerZoneEntry_Struct {
 /*0178*/	uint16	unknown0178;		// ***Placeholder	
 /*0180*/	uint8	pvp;				// PVP Flag
 /*0181*/	uint16	unknown0181;		// ***Placeholder
-/*0197*/    uint32 equipment[MAX_MATERIALS]; // Array elements correspond to struct equipment above
+/*0183*/	int8	face;				// Face Type
+/*0197*/    uint16  equipment[MAX_MATERIALS]; // Array elements correspond to struct equipment above
 /*0202*/	uint16	unknown;			// ***Placeholder
 /*0206*/	Color_Struct colors[MAX_MATERIALS]; // Array elements correspond to struct equipment_colors above
 /*0240*/	uint8	npc_armor_graphic;	// Texture (0xFF=Player - See list of textures for more)
@@ -233,14 +234,14 @@ struct NewZone_Struct
 /*0000*/	char	char_name[64];			// Character Name
 /*0064*/	char	zone_short_name[32];	// Zone Short Name
 /*0096*/	char	zone_long_name[278];	// Zone Long Name
-/*0374*/	uint8	zonetype;
+/*0374*/	uint8	ztype;
 /*0375*/	uint8	fog_red[4];				// Red Fog 0-255 repeated over 4 bytes (confirmed: Wizzel)
 /*0379*/	uint8	fog_green[4];			// Green Fog 0-255 repeated over 4 bytes (confirmed: Wizzel)
 /*0383*/	uint8	fog_blue[4];			// Blue Fog 0-255 repeated over 4 bytes (confirmed: Wizzel)
 /*0387*/	uint8	unknown387;
 /*0388*/	float	fog_minclip[4];			// Where the fog begins (lowest clip setting). Repeated over 4 floats. (confirmed: Wizzel)
 /*0404*/	float	fog_maxclip[4];			// Where the fog ends (highest clip setting). Repeated over 4 floats. (confirmed: Wizzel)	
-/*0420*/	float	walkspeed;				// CD CC CC 3E Can't move if incorrect
+/*0420*/	float	gravity;				// CD CC CC 3E Can't move if incorrect
 /*0424*/	uint8	time_type;
 /*0425*/	uint8	unknown425[49];
 /*0474*/	uint8	sky;
@@ -248,7 +249,7 @@ struct NewZone_Struct
 /*0492*/	float	safe_y;
 /*0496*/	float	safe_x;
 /*0500*/	float	safe_z;
-/*0504*/	float	maz_z;
+/*0504*/	float	max_z;
 /*0508*/	float	underworld;
 /*0512*/	float	minclip;				// Minimum View Distance
 /*0516*/	float	maxclip;				// Maximum View DIstance
@@ -395,8 +396,7 @@ struct Spawn_Struct
 /*0024*/	float	size;
 /*0028*/	float	walkspeed;
 /*0032*/	float	runspeed;
-/*0036*/	uint32	equipcolors[7];
-/*0064*/	uint8	unknown0064[8];
+/*0036*/	Color_Struct	equipcolors[9];
 /*0072*/	uint16	spawn_id;			// Id of new spawn
 /*0074*/	uint8	traptype;			// 65 is disarmable trap, 66 and 67 are invis triggers/traps
 /*0075*/	uint8	unknown0075;
@@ -1684,6 +1684,92 @@ struct MBRetrieveMessages_Struct{
 	uint8 unknown2[3];
 };
 
+// Valids of Guild Rank
+enum GUILDRANK
+{
+	GuildUnknown = -1,		// Comment: Unknown guild rank
+	GuildMember = 0,		// Comment: Guild Leader
+	GuildOffice = 1,		// Comment: Guild Officer
+	GuildLeader = 2,		// Comment: Guild Member
+	NotInaGuild = 3,		// Comment: Char is not in a guild
+	GuildInviteTimeOut = 4, // Comment: Client Invite Window has timed out
+	GuildDeclined = 5		// Comment: User Declined to join Guild
+				
+};
+
+struct GuildRankLevel_Struct 
+{
+	char rankname[101];		// Comment: 
+	bool heargu;			// Comment: 
+	bool speakgu;			// Comment: 
+	bool invite;			// Comment: 
+	bool remove;			// Comment: 
+	bool promote;			// Comment: 
+	bool demote;			// Comment: 
+	bool motd;				// Comment: 
+	bool warpeace;			// Comment: 
+};
+
+struct Guild_Struct
+{
+	char name[32];			// Comment: 
+	uint32 databaseID;		// Comment: 
+	uint32 leader;			// Comment: AccountID of guild leader
+	GuildRankLevel_Struct rank[512+1];	// Comment: 
+};
+
+struct GuildsListEntry_Struct 
+{
+	uint32 guildID;				// Comment: empty = 0xFFFFFFFF
+	char name[32];				// Comment: 
+	uint8 unknown1[4];			// Comment: = 0xFF
+	uint8 exists;				// Comment: = 1 if exists, 0 on empty
+	uint8 unknown2[7];			// Comment: = 0x00
+	uint8 unknown3[4];			// Comment: = 0xFF
+	uint8 unknown4[8];			// Comment: = 0x00
+};
+
+struct GuildsList_Struct 
+{
+	uint8 head[4];							// Comment: 
+	GuildsListEntry_Struct Guilds[512];		// Comment: 
+};
+
+
+struct GuildUpdate_Struct
+{
+	uint32	guildID;				// Comment: 
+	GuildsListEntry_Struct entry;	// Comment: 
+};
+
+// Guild invite, remove
+struct GuildCommand_Struct
+{
+	char Invitee[30];			// Comment: Person who is being invited (Dark-Prince - 11/05/2008) (myname)
+	char Inviter[30];			// Comment: Person who did /guildinvite (Dark-Prince - 11/05/2008) (othername)
+	uint16 guildeqid;			// Comment: 
+	uint8 unknown[2];			// Comment: for guildinvite all 0's, for remove 0=0x56, 2=0x02
+	uint32 rank;					// rank
+};
+
+struct GuildInvite_Struct
+{
+	char Invitee[64];
+	char Inviter[64];
+	uint16 guildeqid;
+	uint8 unknown[2];
+	uint32 rank;
+};
+
+struct GuildRemove_Struct
+{
+	char Remover[64];
+	char Removee[64];
+	uint16 guildeqid;
+	uint8 unknown[2];
+	uint32 rank;
+};
+
 // Harakiri struct for deleting a specific message
 struct MBEraseMessage_Struct{
 /*0000*/ uint32 entityID;	
@@ -2187,10 +2273,37 @@ struct ExpansionInfo_Struct
 	uint32 flag;
 };
 
+
+struct OldSpellBuff_Struct
+{
+	/*000*/uint8  visable;		// Comment: Cofruben: 0 = Buff not visible, 1 = Visible and permanent buff(Confirmed by Tazadar) , 2 = Visible and timer on(Confirmed by Tazadar) 
+	/*001*/uint8  level;			// Comment: Level of person who casted buff
+	/*002*/uint8  bard_modifier;	// Comment: Harakiri: this seems to be the bard modifier, it is normally 0x0A because we set in in the CastOn_Struct when its not a bard, else its the instrument mod
+	/*003*/uint8  b_unknown3;	// Comment: ***Placeholder
+	/*004*/uint16 spellid;		// Comment: Unknown -> needs confirming -> ID of spell?
+	/*006*/uint32 duration;		// Comment: Unknown -> needs confirming -> Duration in ticks
+};
+
+// Length: 10
+struct OldItemProperties_Struct {
+
+uint8	unknown01[2];
+int8	charges;				// Comment: Harakiri signed int because unlimited charges are -1
+uint8	unknown02[7];
+};
+
 /*
 ** Player Profile
 ** Length: 8104 Bytes
 */
+
+struct OldBindStruct {
+	/*004*/ float x;
+	/*008*/ float y;
+	/*012*/ float z;
+	/*020*/
+};
+
 struct PlayerProfile_Struct
 {
 #define pp_inventory_size 30
@@ -2231,16 +2344,16 @@ struct PlayerProfile_Struct
 /*0224*/	uint16	inventory[30];		// Player Inventory Item Numbers
 /*0284*/	uint8	languages[26];		// Player Languages
 /*0310*/	uint8	unknown0310[6];		// ***Placeholder
-/*0316*/	struct	ItemProperties_Struct	invItemProprieties[30];
+/*0316*/	struct	OldItemProperties_Struct	invItemProprieties[30];
 										// These correlate with inventory[30]
-/*0616*/	struct	SpellBuff_Struct	buffs[15];
+/*0616*/	struct	OldSpellBuff_Struct	buffs[15];
 										// Player Buffs Currently On
 /*0766*/	uint16	containerinv[pp_containerinv_size];	// Player Items In "Bags"
 										// If a bag is in slot 0, this is where the bag's items are
 /*0926*/	uint16   cursorbaginventory[10];
-/*0946*/	struct	ItemProperties_Struct	bagItemProprieties[pp_containerinv_size];
+/*0946*/	struct	OldItemProperties_Struct	bagItemProprieties[pp_containerinv_size];
 										// Just like InvItemProperties
-/*1746*/    struct  ItemProperties_Struct	cursorItemProprieties[10];
+/*1746*/    struct  OldItemProperties_Struct	cursorItemProprieties[10];
                                           //just like invitemprops[]
 /*1846*/	int16	spell_book[256];	// Player spells scribed in their book
 /*2358*/	uint8	unknown2374[512];	// ***Placeholder
@@ -2276,11 +2389,11 @@ struct PlayerProfile_Struct
 /*3784*/	uint32	bind_point_zone;	// Lyenu: Bind zone is saved as a int32 now
 /*3788*/	uint32	start_point_zone[4];
 										// Lyenu: Start Point Zones are saved as int32s now
-/*3804*/	BindStruct	bind_location[5];
+/*3804*/	OldBindStruct	bind_location[5];
 										// Player Bind Location (5 different X,Y,Z - Multiple bind points?)
 /*3864*/	uint8	unknown3656[20];	// ***Placeholder
-/*3884*/	ItemProperties_Struct	bankinvitemproperties[8];
-/*3964*/	ItemProperties_Struct	bankbagitemproperties[80];
+/*3884*/	OldItemProperties_Struct	bankinvitemproperties[8];
+/*3964*/	OldItemProperties_Struct	bankbagitemproperties[80];
 /*4764*/	uint8	unknown4556[4];
 /*4768*/	uint16	bank_inv[8];		// Player Bank Inventory Item Numbers
 /*4784*/	uint16	bank_cont_inv[80];	// Player Bank Inventory Item Numbers (Bags)
@@ -2317,11 +2430,15 @@ struct PlayerProfile_Struct
 //			uint32	unknown5450;		// Unknown (Added 09 Oct 2002)
 };
 
+struct Weather_Struct {
+	uint32	val1;	//generall 0x000000FF
+	uint16	type;	//0x31=rain, 0x02=snow(i think), 0 = normal
+	uint16	mode;
+};
+
+
 	};	//end namespace structs
 };	//end namespace MAC
-
-
-
 
 #endif /*MAC_STRUCTS_H_*/
 

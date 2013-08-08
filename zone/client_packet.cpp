@@ -631,30 +631,37 @@ void Client::Handle_Connect_OP_ReqClientSpawn(const EQApplicationPacket *app)
 	}
 	safe_delete(outapp);
 
-	// Send Zone Objects
+	// Send Zone Objects + Mac Spawns here
+
+	if(GetClientVersion() == EQClientMac)
+	{
+		entity_list.SendZoneSpawnsBulk(this);
+	}
+
 	entity_list.SendZoneObjects(this);
 	SendZonePoints();
 	// Live does this
+
+	if(GetClientVersion() > EQClientMac)
+	{
 	outapp = new EQApplicationPacket(OP_SendAAStats, 0);
 	FastQueuePacket(&outapp);
-
+	}
+	outapp = new EQApplicationPacket(OP_SendExpZonein, 0);
+	FastQueuePacket(&outapp);
+	if(GetClientVersion() > EQClientMac)
+	{
 	// Tell client they can continue we're done
 	outapp = new EQApplicationPacket(OP_ZoneServerReady, 0);
 	FastQueuePacket(&outapp);
-	outapp = new EQApplicationPacket(OP_SendExpZonein, 0);
+	outapp = new EQApplicationPacket(OP_ClientReady, 0);
 	FastQueuePacket(&outapp);
-
-	if(GetClientVersion() >= EQClientRoF)
-	{
-		outapp = new EQApplicationPacket(OP_ClientReady, 0);
-		FastQueuePacket(&outapp);
-	}
 
 	// New for Secrets of Faydwer - Used in Place of OP_SendExpZonein
 	outapp = new EQApplicationPacket(OP_WorldObjectsSent, 0);
 	QueuePacket(outapp);
 	safe_delete(outapp);
-
+	}
 	if(strncasecmp(zone->GetShortName(), "bazaar", 6) == 0)
 		SendBazaarWelcome();
 
@@ -9157,9 +9164,12 @@ bool Client::FinishConnState2(DBAsyncWork* dbaw) {
 
 	////////////////////////////////////////////////////////////
 	// Zone Spawns Packet
+	if(GetClientVersion() > EQClientMac)
+	{
 	entity_list.SendZoneSpawnsBulk(this);
 	entity_list.SendZoneCorpsesBulk(this);
 	entity_list.SendZonePVPUpdates(this);	//hack until spawn struct is fixed.
+	}
 
 
 

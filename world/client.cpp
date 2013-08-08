@@ -464,7 +464,7 @@ bool Client::HandleSendLoginInfoPacket(const EQApplicationPacket *app) {
 		{
 		
 
-			if (!pZoning)
+			if (!pZoning && ClientVersionBit != 0)
 				SendGuildList();
 			SendLogServer();
 			SendApproveWorld();
@@ -1003,6 +1003,12 @@ bool Client::HandlePacket(const EQApplicationPacket *app) {
 		case OP_WorldComplete:
 		{
 			eqs->Close();
+			return true;
+		}
+		case OP_GuildsList:
+		{
+			if(ClientVersionBit == 0)
+			SendGuildList();
 			return true;
 		}
 		case OP_ZoneChange:

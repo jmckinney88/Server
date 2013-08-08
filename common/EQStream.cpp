@@ -1920,7 +1920,7 @@ void EQOldStream::CheckBufferedPackets()
 */
 void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 {
-	int16 restore_op;
+	int16 restore_op = 0x0000;
 
 	/************ PM STATE = NOT ACTIVE ************/
 	if(pm_state == EQStreamState::CLOSING)
@@ -1936,9 +1936,12 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 		pack->dwARQ             = SACK.dwARQ;// try this instead
 
 		//AddAck(pack);
+		MOutboundQueue.lock();
 		MySendPacketStruct *p = new MySendPacketStruct;
+
 		p->buffer = pack->ReturnPacket(&p->size);
 		SendQueue.push(p);
+		MOutboundQueue.unlock();
 		SACK.dwGSQ++; 
 		safe_delete(pack);//delete pack;
 
@@ -1966,13 +1969,14 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 			SACK.dbASQ_high         = 1;            //Current sequence number
 			SACK.dbASQ_low          = 0;            //Current sequence number
 		}
+		MOutboundQueue.lock();
 		MySendPacketStruct *p = new MySendPacketStruct;
 		pack->HDR.b2_ARSP    = 1;
 		pack->dwARSP         = dwLastCACK;//CACK.dwARQ;
 		pack->dwSEQ = SACK.dwGSQ++;
-
 		p->buffer = pack->ReturnPacket(&p->size);
 		SendQueue.push(p);  
+		MOutboundQueue.unlock();
 
 		no_ack_sent_timer->Disable();
 		safe_delete(pack);//delete pack;
@@ -2117,9 +2121,10 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 			/************ End update timers ************/
 			                    
 			pack->dwSEQ = SACK.dwGSQ++;
-			            
+			MOutboundQueue.lock();
 			p->buffer = pack->ReturnPacket(&p->size);
 			SendQueue.push(p);
+			MOutboundQueue.unlock();
 			    
 			if(pack->HDR.a4_ASQ)
 				SACK.dbASQ_low++;
@@ -2233,6 +2238,8 @@ void EQOldStream::FastQueuePacket(EQApplicationPacket **p, bool ack_req)
 		return;
 	}
 	EQProtocolPacket* pack2 = new EQProtocolPacket(opcode, pack->pBuffer, pack->size);
+
+	_log(NET__DEBUG, "Sending old opcode 0x%x", opcode);
 	MakeEQPacket(pack2, ack_req);
 	delete pack;
 	delete pack2;
@@ -2287,9 +2294,9 @@ EQApplicationPacket *p=nullptr;
 	MOutboundQueue.lock();
 	while (!SendQueue.empty()) {
 		MySendPacketStruct *p = SendQueue.front();
+		SendQueue.pop();
 		safe_delete(p->buffer);
 		p->size = 0;
-		SendQueue.pop();
 	}
 	MOutboundQueue.unlock();
 }
