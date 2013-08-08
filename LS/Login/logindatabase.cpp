@@ -35,6 +35,7 @@ int32 Database::GetLSLoginInfo(char* iUsername, char* oPassword, int8* lsadmin, 
 	if (strlen(iUsername) >= 100)
 		return 0;
 	DoEscapeString(tmp, iUsername, strlen(iUsername));
+cout << tmp << " " << iUsername << oPassword << endl;
 
 	if (RunQuery(query, MakeAnyLenString(&query, "SELECT id, name, password, lsadmin, lsstatus, worldadmin,user_active from login_accounts where name like '%s'", tmp), errbuf, &result)) {
 		delete[] query;
@@ -415,51 +416,27 @@ int32 Database::CheckEQLogin(const APPLAYER* app, char* oUsername, int8* lsadmin
 			cout<<"Invalid username/password lengths"<<endl;
 			return 0;
 		}
-		char dbpass[64];
+		char dbpass[33];
 		int32 accid = database.GetLSLoginInfo(lcs->username, dbpass, lsadmin, lsstatus, verified, worldadmin);
 		if (accid == 0)
 			return 0;
-		//MD5 md5pass(lcs->password, strlen(lcs->password));
+		MD5 md5pass(lcs->password, strlen(lcs->password));
 		if (oUsername)
 			strcpy(oUsername, lcs->username);
-		if (strcmp(lcs->password, dbpass) == 0)//md5pass == dbpass)
+		string str = md5pass;
+		string str2 = dbpass;
+		if (!str.compare(str2))
 		{
 			struct in_addr in;
 			in.s_addr = ip;
 			//Yeahlight: Check for account lockout, return 9999999 for a 15 min suspension, 9999998 for PERMINATE
-			PERMISSION lockoutFlag = database.CheckAccountLockout(inet_ntoa(in));
-			if (lockoutFlag == TEMP_SUSPENSION)
-				return ACCOUNT_TEMP_SUSPENDED;
-			else if(lockoutFlag == PERM_SUSPENSION)
-				return ACCOUNT_PERM_SUSPENDED;
-			database.ClearAccountLockout(inet_ntoa(in));
-			if (!database.RunQuery(query, MakeAnyLenString(&query, "Update login_accounts  set ip='%s',user_lastvisit=unix_timestamp(now()) where name='%s'", inet_ntoa(in), lcs->username), errbuf))
-				cerr << "Error in set IP query '" << query << "' " << errbuf << endl;
-			delete[] query;
+		//	database.ClearAccountLockout(inet_ntoa(in));
 			return accid;
 		}
 		else
 		{
-			struct in_addr in;
-			in.s_addr = ip;
-			if(database.FailedLogin(inet_ntoa(in)))
-			{
-				PERMISSION ret = database.CheckAccountLockout(inet_ntoa(in));
-				if (ret == RESET){
-					database.ClearAccountLockout(inet_ntoa(in));
-					return 0;
-				}
-				else if (ret == TEMP_SUSPENSION)
-					return ACCOUNT_TEMP_SUSPENDED;
-				else if (ret == PERM_SUSPENSION)
-					return ACCOUNT_PERM_SUSPENDED;
-				else
-					return PERMITTED;
-			}
-			else
-			{
-				return 0;
-			}
+		cout << "Invalid login" << endl;
+		return 0;
 		}
 	
 }

@@ -13,8 +13,8 @@
 #define ErrorRegUnavail				"Registration functions are unavailable at this time."
 #define ErrorAccountBanished		"This account has been BANNED. To contest this decision, please contact the server's administration."
 #define ErrorAccountSuspended		"This account has been SUSPENDED. To contest this decision, please contact the server's administration."
-#define ErrorAccountNotVerified		"Your account has not been verified by e-mail.  Please goto http://www.eqclassic.org/ to update your information."
-#define PasswordChangeMessage		"EQC: Account password successfully changed."
+#define ErrorAccountNotVerified		"Your account has not been verified by e-mail.  Please goto http://www.eqemulator.org/ to update your information."
+#define PasswordChangeMessage		"Account password successfully changed."
 
 enum eLoginMode { None, Normal, Registration };
 

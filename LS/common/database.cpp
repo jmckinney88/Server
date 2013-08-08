@@ -5864,151 +5864,17 @@ return true;
 //Yeahlight: Keep track of failed login attempts. Return TRUE to lockout IP
 bool Database::FailedLogin(char* ip)
 {
-	char errbuf[MYSQL_ERRMSG_SIZE];
-    char *query = 0;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-	
-	if (RunQuery(query, MakeAnyLenString(&query, "SELECT failed_attempts, lockout_time_stamp FROM failed_login_attempts WHERE ip = '%s'", ip), errbuf, &result))
-	{
-		row = mysql_fetch_row(result);
-		mysql_free_result(result);
-		if(!row)
-		{
-			char errbuf2[MYSQL_ERRMSG_SIZE];
-			char *query2 = 0;
-			if(RunQuery(query2, MakeAnyLenString(&query2, "INSERT INTO failed_login_attempts (ip, failed_attempts) values ('%s','1')", ip), errbuf2))
-			{
-				delete[] query2;
-				return false;
-			}
-			else
-			{
-				cerr << "Error in FailedLogin query '" << query2 << "' " << errbuf2 << endl;
-				delete[] query2;
-				return false;
-			}
-		}
-		else
-		{
-			int16 failed_attempts = atoi(row[0]);
-			int32 time_stamp = atoi(row[1]);
-			delete[] query;
-			if(failed_attempts < 4)
-			{
-				char errbuf2[MYSQL_ERRMSG_SIZE];
-				char *query2 = 0;
-				if(RunQuery(query2, MakeAnyLenString(&query2, "UPDATE failed_login_attempts SET failed_attempts = %i WHERE ip = '%s'", failed_attempts + 1, ip), errbuf2))
-				{
-					delete[] query2;
-					return false;
-				}
-				else
-				{
-					cerr << "Error in FailedLogin query '" << query2 << "' " << errbuf2 << endl;
-					delete[] query2;
-					return false;
-				}
-			}
-			//Yeahlight: Client hit their 5th bad login attempt, lockout their IP
-			else if(failed_attempts == 4)
-			{
-				char errbuf2[MYSQL_ERRMSG_SIZE];
-				char *query2 = 0;
-				time_t now = time(NULL);
-				int32 dbtime = 0;
-				//Yeahlight: Has this IP been locked out within the past 48 hours? If so, suspend the account indefinitely by updating the timestap to "1"
-				if(now - time_stamp < 172800)
-					dbtime = 1;
-				else
-					dbtime = now;
-				if(RunQuery(query2, MakeAnyLenString(&query2, "UPDATE failed_login_attempts SET failed_attempts = 5, lockout_time_stamp = %i where ip = '%s'", dbtime, ip), errbuf2))
-				{
-					delete[] query2;
-					return true;
-				}
-				else
-				{
-					cerr << "Error in FailedLogin query '" << query2 << "' " << errbuf2 << endl;
-					delete[] query2;
-					return false;
-				}
-			}
-			else
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-	else 
-	{
-		cerr << "Error in FailedLogin query '" << query << "' " << errbuf << endl;
-		delete[] query;
-		return false;
-	}
 	return false;
 }
 
 //Yeahlight: See if the account is locked out. Return 0 to permit the login process, return > 0 for suspensions
 PERMISSION Database::CheckAccountLockout(char* ip)
 {
-	char errbuf[MYSQL_ERRMSG_SIZE];
-    char *query = 0;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-	
-	if (RunQuery(query, MakeAnyLenString(&query, "SELECT failed_attempts, lockout_time_stamp FROM failed_login_attempts WHERE ip = '%s'", ip), errbuf, &result))
-	{
-		row = mysql_fetch_row(result);
-		mysql_free_result(result);
-		delete[] query;
-		if(row){
-			int32 time_stamp = atoi(row[1]);
-			time_t now = time(NULL);
-			if(time_stamp == 1)
-				return PERM_SUSPENSION;
-			else if(now - time_stamp > 900)
-			{
-				if(atoi(row[0]) == 5)
-					return RESET;
-				else
-					return PERMITTED;
-			}
-			else
-				return TEMP_SUSPENSION;
-		}
-		else
-		{
-			return PERMITTED;
-		}
-	}
-	else
-	{
-		cerr << "Error in CheckAccountLockout query '" << query << "' " << errbuf << endl;
-		delete[] query;
-	}
 	return PERMITTED;
 }
 
 //Yeahlight: Clears the lockout record for a specific IP, but it will remain in the DB for future, extended lockout consideration
 bool Database::ClearAccountLockout(char* ip)
 {
-	char errbuf[MYSQL_ERRMSG_SIZE];
-    char *query = 0;
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-	
-	if (!RunQuery(query, MakeAnyLenString(&query, "UPDATE failed_login_attempts SET failed_attempts = 0 WHERE ip = '%s'", ip), errbuf, &result))
-	{
-		cerr << "Error in ClearAccountLockout query '" << query << "' " << errbuf << endl;
-		delete[] query;
-		return false;
-	}
-	else
-	{
-		delete[] query;
-		return true;
-	}
 	return true;
 }

@@ -138,8 +138,8 @@ worldresponse_timer->Disable();
 						outapp->size += strlen(buf);
 					}
 					else {
-						strcpy(buf, "Welcome to EQClassic!");
-						outapp->size += strlen("Welcome to EQClassic!");
+						strcpy(buf, "Welcome to EQEmu!");
+						outapp->size += strlen("Welcome to EQEmu!");
 					}
 #endif
 					if (strlen(buf) == 0) {
@@ -435,25 +435,25 @@ worldresponse_timer->Disable();
 						break;
 					// Quag: packet format is oldpass + null + newpass + null (no encryption)
 					if (account_id == 0) {
-						FatalError("EQC error: OP_ChangePassword when not logged in");
+						FatalError("Error: OP_ChangePassword when not logged in");
 						break;
 					}
 					else if (LoginMode != Registration) {
-						FatalError("EQC error: OP_ChangePassword when not in Registration mode");
+						FatalError("Error error: OP_ChangePassword when not in Registration mode");
 						break;
 					}
 					else if (strlen((char*) app->pBuffer) > 15 || (strlen((char*) app->pBuffer) + 2) >= app->size || strlen((char*) &app->pBuffer[strlen((char*) app->pBuffer)+1]) > 15) {
 //						cout << << "Corrupted OP_ChangePassword packet." << endl;
-						FatalError("EQC error: Corrupted OP_ChangePassword packet");
+						FatalError("Error error: Corrupted OP_ChangePassword packet");
 						break;
 					}
 					int32 tmp = database.ChangeLSPassword(account_id, (char*) &app->pBuffer[strlen((char*) app->pBuffer)+1], (char*) app->pBuffer);
 					if (tmp == 2) {
-						FatalError("EQC error: Unable to change password (database error)");
+						FatalError("Error error: Unable to change password (database error)");
 						break;
 					}
 					else if (tmp == 1) {
-						FatalError("EQC error: Old password didnt match. Password not changed.");
+						FatalError("Error error: Old password didnt match. Password not changed.");
 						break;
 					}
 					else if (tmp == 0) {
@@ -463,7 +463,7 @@ worldresponse_timer->Disable();
 						delete outapp;
 					}
 					else {
-						FatalError("EQC error: Unable to change password (unknown error)");
+						FatalError("Error error: Unable to change password (unknown error)");
 						break;
 					}
 					break;
@@ -496,9 +496,9 @@ worldresponse_timer->Disable();
 					eq_crypto.DoEQDecrypt(app->pBuffer, tmp, 1660);
 					Registration_Struct* rs = (Registration_Struct*) tmp;
 					if (!database.AddLoginAccount(rs->StationName, rs->Password, rs->ChatHandel, rs->AccountKey, rs->EMail))
-						FatalError("EQC error: Unable to Add Account!");
+						FatalError("Error error: Unable to Add Account!");
 					else
-						FatalError("EQC: Account Creation Successful");
+						FatalError("Error: Account Creation Successful");
 					break;
 #endif
 				}
@@ -625,13 +625,13 @@ void Client::FatalError(const char* message, bool disconnect) {
 	if (strlen(message) > 1) {
 		outapp->size = 11 + strlen(message) + 1;
 		outapp->pBuffer = new uchar[outapp->size];
-		strncpy((char*) outapp->pBuffer, "EQC Error: ", 11);
+		strncpy((char*) outapp->pBuffer, "Error: ", 11);
 		strcpy((char*) &outapp->pBuffer[11], message);
 	}
 	else {
-		outapp->size = strlen("EQC: Unknown Error") + 1;
+		outapp->size = strlen("Unknown Error") + 1;
 		outapp->pBuffer = new uchar[outapp->size];
-		strcpy((char*) outapp->pBuffer, "EQC: Unknown Error");
+		strcpy((char*) outapp->pBuffer, "Unknown Error");
 	}
 	QueuePacket(outapp);
 	delete outapp;
