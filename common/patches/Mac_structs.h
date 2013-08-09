@@ -374,16 +374,12 @@ struct ClientTaunt_Struct
 
 struct Spawn_Struct
 {
+			uint32  unknown0000;
 /*0000*/	uint8	animation;
 /*0001*/	uint8	heading;			// Current Heading
 /*0002*/	uint8	deltaHeading;		// Delta Heading
-#ifndef INVERSEXY
-/*0003*/	int16	x_pos;				// X Position
 /*0005*/	int16	y_pos;				// Y Position
-#else
-/*0003*/	int16	y_pos;				// Y Position
-/*0005*/	int16	x_pos;				// X Position
-#endif
+/*0003*/	int16	x_pos;				// X Position
 /*0007*/	int16	z_pos;				// Z Position
 /*0009*/	int32	deltaY:10,			// Velocity Y
 					spacer1:1,			// Placeholder
@@ -396,7 +392,8 @@ struct Spawn_Struct
 /*0024*/	float	size;
 /*0028*/	float	walkspeed;
 /*0032*/	float	runspeed;
-/*0036*/	Color_Struct	equipcolors[9];
+/*0036*/	Color_Struct	equipcolors[7];
+/*0064*/	uint8	unknown0064[8];
 /*0072*/	uint16	spawn_id;			// Id of new spawn
 /*0074*/	uint8	traptype;			// 65 is disarmable trap, 66 and 67 are invis triggers/traps
 /*0075*/	uint8	unknown0075;

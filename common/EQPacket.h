@@ -33,29 +33,29 @@
 /************ PACKETS ************/
 struct EQPACKET_HDR_INFO
 {
-	int8 a0_Unknown  :   1; //TODO: What is this one?
-	int8 a1_ARQ      :   1; //TODO: What is this one?
-	int8 a2_Closing  :   1; //TODO: What is this one?
-	int8 a3_Fragment :   1; //TODO: What is this one?
-	int8 a4_ASQ      :   1; //TODO: What is this one?
-	int8 a5_SEQStart :   1; //TODO: What is this one?
-	int8 a6_Closing  :   1; //TODO: What is this one?
-	int8 a7_SEQEnd   :   1; //TODO: What is this one?
-	int8 b0_SpecARQ  :   1; //TODO: What is this one?
-	int8 b1_Unknown  :   1; //TODO: What is this one?
-	int8 b2_ARSP     :   1; //TODO: What is this one?
-	int8 b3_Unknown  :   1; //TODO: What is this one?
-	int8 b4_Unknown  :   1; //TODO: What is this one?
-	int8 b5_Unknown  :   1; //TODO: What is this one?
-	int8 b6_Unknown  :   1; //TODO: What is this one?
-	int8 b7_Unknown  :   1; //TODO: What is this one?
+	uint8 a0_Unknown  :   1; //TODO: What is this one?
+	uint8 a1_ARQ      :   1; //TODO: What is this one?
+	uint8 a2_Closing  :   1; //TODO: What is this one?
+	uint8 a3_Fragment :   1; //TODO: What is this one?
+	uint8 a4_ASQ      :   1; //TODO: What is this one?
+	uint8 a5_SEQStart :   1; //TODO: What is this one?
+	uint8 a6_Closing  :   1; //TODO: What is this one?
+	uint8 a7_SEQEnd   :   1; //TODO: What is this one?
+	uint8 b0_SpecARQ  :   1; //TODO: What is this one?
+	uint8 b1_Unknown  :   1; //TODO: What is this one?
+	uint8 b2_ARSP     :   1; //TODO: What is this one?
+	uint8 b3_Unknown  :   1; //TODO: What is this one?
+	uint8 b4_Unknown  :   1; //TODO: What is this one?
+	uint8 b5_Unknown  :   1; //TODO: What is this one?
+	uint8 b6_Unknown  :   1; //TODO: What is this one?
+	uint8 b7_Unknown  :   1; //TODO: What is this one?
 };
 
 struct FRAGMENT_INFO
 {
-	int16 dwSeq;	//TODO: What is this one?
-	int16 dwCurr;	//TODO: What is this one?
-	int16 dwTotal;	//TODO: What is this one?
+	uint16 dwSeq;	//TODO: What is this one?
+	uint16 dwCurr;	//TODO: What is this one?
+	uint16 dwTotal;	//TODO: What is this one?
 };
 
 class EQStream;

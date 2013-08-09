@@ -880,10 +880,10 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		strn0cpy(ns->spawn.lastName, lastname, sizeof(ns->spawn.lastName));
 	}
 
-	ns->spawn.heading	= FloatToEQ19(heading);
-	ns->spawn.x			= FloatToEQ19(x_pos);//((int32)x_pos)<<3;
-	ns->spawn.y			= FloatToEQ19(y_pos);//((int32)y_pos)<<3;
-	ns->spawn.z			= FloatToEQ19(z_pos);//((int32)z_pos)<<3;
+	ns->spawn.heading	= heading;
+	ns->spawn.x			= x_pos;//((int32)x_pos)<<3;
+	ns->spawn.y			= y_pos;//((int32)y_pos)<<3;
+	ns->spawn.z			= z_pos;//((int32)z_pos)<<3;
 	ns->spawn.spawnId	= GetID();
 	ns->spawn.curHp	= static_cast<uint8>(GetHPRatio());
 	ns->spawn.max_hp	= 100;		//this field needs a better name
@@ -894,7 +894,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.gender	= gender;
 	ns->spawn.level		= level;
 	ns->spawn.deity		= deity;
-	ns->spawn.animation	= 0;
+	ns->spawn.animation	= animation;
 	ns->spawn.findable	= findable?1:0;
 	ns->spawn.light		= light;
 	ns->spawn.showhelm = 1;

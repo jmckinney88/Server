@@ -633,13 +633,9 @@ void Client::Handle_Connect_OP_ReqClientSpawn(const EQApplicationPacket *app)
 
 	// Send Zone Objects + Mac Spawns here
 
-	if(GetClientVersion() == EQClientMac)
-	{
-		entity_list.SendZoneSpawnsBulk(this);
-	}
-
 	entity_list.SendZoneObjects(this);
 	SendZonePoints();
+	entity_list.SendZoneSpawnsBulk(this);
 	// Live does this
 
 	if(GetClientVersion() > EQClientMac)

@@ -449,13 +449,13 @@ ENCODE(OP_ZoneSpawns) {
 		eq->max_hp = emu->max_hp;
 		eq->findable = emu->findable;
 		eq->deltaHeading = emu->deltaHeading;
-		eq->x = emu->x;
-		eq->y = emu->y;
+		eq->x = FloatToEQ19(emu->x);
+		eq->y = FloatToEQ19(emu->y);
 		eq->animation = emu->animation;
-		eq->z = emu->z;
+		eq->z = FloatToEQ19(emu->z);
 		eq->deltaY = emu->deltaY;
 		eq->deltaX = emu->deltaX;
-		eq->heading = emu->heading;
+		eq->heading = FloatToEQ19(emu->heading);
 		eq->deltaZ = emu->deltaZ;
 		eq->eyecolor1 = emu->eyecolor1;
 //		eq->showhelm = emu->showhelm;

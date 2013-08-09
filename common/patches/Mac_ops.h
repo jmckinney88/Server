@@ -13,5 +13,8 @@ E(OP_ZoneSpawns)
 E(OP_SpawnDoor)
 E(OP_GuildsList)
 D(OP_EnterWorld)
+D(OP_ChannelMessage)
+E(OP_ChannelMessage)
+E(OP_SpecialMesg)
 #undef E
 #undef D

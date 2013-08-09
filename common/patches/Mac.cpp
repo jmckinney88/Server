@@ -135,7 +135,7 @@ ENCODE(OP_ZoneEntry) {
 		eq->x = emu->x;
 		eq->y = emu->y;
 		eq->z = emu->z;
-		eq->heading = emu->heading;
+		eq->heading = (uint8)emu->heading;
 		eq->eyecolor1 = emu->eyecolor1;
 //		eq->showhelm = emu->showhelm;
 		eq->hairstyle = emu->hairstyle;
@@ -353,6 +353,8 @@ ENCODE(OP_GuildsList) {
 			eq->Guilds[r].exists = 1;
 			eq->Guilds[r].guildID = r;
 		}
+		else
+			eq->Guilds[r].guildID = 0xFFFFFFFF;
 	}
 
 	FINISH_ENCODE();	
@@ -391,6 +393,69 @@ ENCODE(OP_NewZone) {
 	OUT(minclip);
 	OUT(maxclip);
 	FINISH_ENCODE();	
+}
+
+ENCODE(OP_ChannelMessage) {
+	EQApplicationPacket *__packet = *p; 
+	*p = nullptr; 
+	unsigned char *__emu_buffer = __packet->pBuffer; 
+	ChannelMessage_Struct *emu = (ChannelMessage_Struct *) __emu_buffer; 
+	uint32 __i = 0; 
+	__i++; /* to shut up compiler */
+	
+	int msglen = __packet->size - sizeof(ChannelMessage_Struct);
+	int len = sizeof(structs::ChannelMessage_Struct) + msglen + 4;
+	__packet->pBuffer = new unsigned char[len]; 
+	__packet->size = len; 
+	memset(__packet->pBuffer, 0, len); 
+	structs::ChannelMessage_Struct *eq = (structs::ChannelMessage_Struct *) __packet->pBuffer; 
+	strncpy(eq->targetname, emu->targetname, 64);
+	strncpy(eq->sender, emu->sender, 64);
+	eq->language = emu->language;
+	eq->chan_num = emu->chan_num;
+	eq->skill_in_language = emu->skill_in_language;
+	strcpy(eq->message, emu->message);
+	FINISH_ENCODE();
+}
+
+
+ENCODE(OP_SpecialMesg) {
+	EQApplicationPacket *__packet = *p; 
+	*p = nullptr; 
+	unsigned char *__emu_buffer = __packet->pBuffer; 
+	SpecialMesg_Struct *emu = (SpecialMesg_Struct *) __emu_buffer; 
+	uint32 __i = 0; 
+	__i++; /* to shut up compiler */
+	
+	int msglen = __packet->size - sizeof(SpecialMesg_Struct);
+	int len = sizeof(structs::SpecialMesg_Struct) + msglen + 1;
+	__packet->pBuffer = new unsigned char[len]; 
+	__packet->size = len; 
+	memset(__packet->pBuffer, 0, len); 
+	structs::SpecialMesg_Struct *eq = (structs::SpecialMesg_Struct *) __packet->pBuffer; 
+	eq->msg_type = emu->msg_type;
+	strcpy(eq->message, emu->message);
+	FINISH_ENCODE();
+}
+
+
+
+DECODE(OP_ChannelMessage)
+{
+	unsigned char *__eq_buffer = __packet->pBuffer;
+	structs::ChannelMessage_Struct *eq = (structs::ChannelMessage_Struct *) __eq_buffer;
+	int msglen = __packet->size - sizeof(structs::ChannelMessage_Struct) - 4;
+	int len = msglen + sizeof(ChannelMessage_Struct);
+	__packet->size = len; 
+	__packet->pBuffer = new unsigned char[len];
+	MEMSET_IN(ChannelMessage_Struct);
+	ChannelMessage_Struct *emu = (ChannelMessage_Struct *) __packet->pBuffer;
+	strncpy(emu->targetname, eq->targetname, 64);
+	strncpy(emu->sender, eq->targetname, 64);
+	emu->language = eq->language;
+	emu->chan_num = eq->chan_num;
+	emu->skill_in_language = eq->skill_in_language;
+	strcpy(emu->message, eq->message);
 }
 
 ENCODE(OP_SpawnDoor) {
@@ -440,15 +505,17 @@ ENCODE(OP_ZoneSpawns){
 		delete in;
 		return;
 	}
-
+	EQApplicationPacket* out = new EQApplicationPacket();
+	out->SetOpcode(OP_ZoneSpawns);
 	//make the EQ struct.
-	in->size = sizeof(structs::Spawn_Struct)*entrycount;
-	in->pBuffer = new unsigned char[in->size];
-	structs::Spawn_Struct *eq = (structs::Spawn_Struct *) in->pBuffer;
+	out->size = sizeof(structs::Spawn_Struct)*entrycount;
+	out->pBuffer = new unsigned char[out->size];
+	structs::Spawn_Struct *eq = (structs::Spawn_Struct *) out->pBuffer;
 
 	//zero out the packet. We could avoid this memset by setting all fields (including unknowns)
 	//in the loop.
-	memset(in->pBuffer, 0, in->size);
+	memset(out->pBuffer, 0, out->size);
+	_log(NET__STRUCTS, "Total size of bulkspawns packet STRUCT: %d", sizeof(structs::Spawn_Struct));
 
 	//do the transform...
 	int r;
@@ -461,7 +528,7 @@ ENCODE(OP_ZoneSpawns){
 //		eq->unknown0004 = emu->unknown0004;
 		eq->anon = emu->anon;
 		//eq->face = emu->face;
-		strcpy(eq->name, emu->name);
+		memcpy(eq->name, emu->name, 30);
 		eq->deity = emu->deity;
 //		eq->unknown0073 = emu->unknown0073;
 		eq->size = emu->size;
@@ -474,17 +541,17 @@ ENCODE(OP_ZoneSpawns){
 		//eq->findable = emu->findable;
 //		eq->unknown0089[5] = emu->unknown0089[5];
 		eq->deltaHeading = emu->deltaHeading;
-		eq->x_pos = emu->x;
+		eq->x_pos = (int16)emu->x;
 //		eq->padding0054 = emu->padding0054;
-		eq->y_pos = emu->y;
+		eq->y_pos = (int16)emu->y;
 		eq->animation = emu->animation;
 //		eq->padding0058 = emu->padding0058;
-		eq->z_pos = emu->z;
-		eq->deltaY = emu->deltaY;
-		eq->deltaX = emu->deltaX;
-		eq->heading = emu->heading;
+		eq->z_pos = (int16)emu->z * 10;
+		eq->deltaY = 0;
+		eq->deltaX = 0;
+		eq->heading = (uint8)emu->heading;
 //		eq->padding0066 = emu->padding0066;
-		eq->deltaZ = emu->deltaZ;
+		eq->deltaZ = 0;
 //		eq->padding0070 = emu->padding0070;
 		eq->eyecolor1 = emu->eyecolor1;
 //		eq->unknown0115[24] = emu->unknown0115[24];
@@ -496,7 +563,7 @@ ENCODE(OP_ZoneSpawns){
 		//if(emu->gender == 1){
 		//	eq->hairstyle = eq->hairstyle == 0xFF ? 0 : eq->hairstyle;
 		//}
-
+		eq->anim_type = 0x64;
 		eq->beardcolor = emu->beardcolor;
 //		eq->unknown0147[4] = emu->unknown0147[4];
 		eq->level = emu->level;
@@ -504,18 +571,24 @@ ENCODE(OP_ZoneSpawns){
 	//	eq->beard = emu->beard;
 		//eq->petOwnerId = emu->petOwnerId;
 		eq->guildrank = emu->guildrank;
+		if(emu->NPC == 1)
+			eq->guildrank = 0;
+
+		eq->npc_armor_graphic = 0xFF;
 //		eq->unknown0194[3] = emu->unknown0194[3];
-		for(k = 0; k < 9; k++) {
+		for(k = 0; k < 7; k++) {
 			eq->equipment[k] = emu->equipment[k];
 			eq->equipcolors[k].color = emu->colors[k].color;
 		}
 		eq->runspeed = emu->runspeed;
 		eq->AFK = emu->afk;
 		eq->GuildID = emu->guildID;
-		eq->title = emu->face;
+		if(eq->GuildID == 0)
+			eq->GuildID = 0xFFFF;
+		//eq->title = emu->face;
 //		eq->unknown0274 = emu->unknown0274;
 		//eq->helm = emu->helm;
-		if(emu->race > 473)
+		if(emu->race > 255)
 			eq->race = 1;
 		else
 			eq->race = emu->race;
@@ -548,57 +621,36 @@ ENCODE(OP_ZoneSpawns){
 		*/
 
 	}
-	EQApplicationPacket* outapp = new EQApplicationPacket();
-	outapp->SetOpcode(OP_ZoneSpawns);
+	_log(NET__STRUCTS, "Total size of bulkspawns packet uncompressed: %d", out->size);
+	EQApplicationPacket* outapp = new EQApplicationPacket(OP_ZoneSpawns, sizeof(structs::Spawn_Struct)*entrycount);
 	outapp->pBuffer = new uchar[sizeof(structs::Spawn_Struct)*entrycount];
-	outapp->size = DeflatePacket((unsigned char*)in->pBuffer, entrycount * sizeof(structs::NewSpawn_Struct), outapp->pBuffer, sizeof(structs::Spawn_Struct)*entrycount);
+	outapp->size = DeflatePacket((unsigned char*)out->pBuffer, out->size, outapp->pBuffer, sizeof(structs::Spawn_Struct)*entrycount);
 	EncryptZoneSpawnPacket(outapp->pBuffer, outapp->size);
+	_log(NET__STRUCTS, "Total size of bulkspawns packet compressed: %d", outapp->size);
 
 	//kill off the emu structure and send the eq packet.
 	delete[] __emu_buffer;
-	delete in;
+	delete out;
 	dest->FastQueuePacket(&outapp, ack_req);
 
 }
 
 ENCODE(OP_NewSpawn) {
-//consume the packet
-	EQApplicationPacket *in = *p;
-	*p = nullptr;
-
-	//store away the emu struct
-	unsigned char *__emu_buffer = in->pBuffer;
-	Spawn_Struct *emu = (Spawn_Struct *) __emu_buffer;
-
-	//determine and verify length
-	int entrycount = in->size / sizeof(Spawn_Struct);
-	if(entrycount == 0 || (in->size % sizeof(Spawn_Struct)) != 0) {
-		_log(NET__STRUCTS, "Wrong size on outbound %s: Got %d, expected multiple of %d", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(Spawn_Struct));
-		delete in;
-		return;
-	}
-
-	//make the EQ struct.
-	in->size = sizeof(structs::Spawn_Struct)*entrycount;
-	in->pBuffer = new unsigned char[in->size];
-	structs::Spawn_Struct *eq = (structs::Spawn_Struct *) in->pBuffer;
-
+	SETUP_DIRECT_ENCODE(Spawn_Struct, structs::Spawn_Struct);
 	//zero out the packet. We could avoid this memset by setting all fields (including unknowns)
 	//in the loop.
-	memset(in->pBuffer, 0, in->size);
-
+	if(emu->size < 1)
+		emu->size = 1;
+	int k = 0;
 	//do the transform...
-	int r;
-	int k;
-	for(r = 0; r < entrycount; r++, eq++, emu++) {
 //		eq->unknown0000 = emu->unknown0000;
 		eq->GM = emu->gm;
 //		eq->unknown0003 = emu->unknown0003;
-		eq->title = emu->aaitle;
+		//eq->title = emu->aaitle;
 //		eq->unknown0004 = emu->unknown0004;
 		eq->anon = emu->anon;
 		//eq->face = emu->face;
-		strcpy(eq->name, emu->name);
+		strncpy(eq->name, emu->name, 64);
 		eq->deity = emu->deity;
 //		eq->unknown0073 = emu->unknown0073;
 		eq->size = emu->size;
@@ -610,18 +662,18 @@ ENCODE(OP_NewSpawn) {
 		//eq->max_hp = emu->max_hp;
 		//eq->findable = emu->findable;
 //		eq->unknown0089[5] = emu->unknown0089[5];
-		eq->deltaHeading = emu->deltaHeading;
-		eq->x_pos = emu->x;
+		eq->deltaHeading = 0;
+		eq->x_pos = (int16)emu->x;
 //		eq->padding0054 = emu->padding0054;
-		eq->y_pos = emu->y;
+		eq->y_pos = (int16)emu->y;
 		eq->animation = emu->animation;
 //		eq->padding0058 = emu->padding0058;
-		eq->z_pos = emu->z;
-		eq->deltaY = emu->deltaY;
-		eq->deltaX = emu->deltaX;
-		eq->heading = emu->heading;
+		eq->z_pos = (int16)emu->z;
+		eq->deltaY = 0;
+		eq->deltaX = 0;
+		eq->heading = (uint8)emu->heading;
 //		eq->padding0066 = emu->padding0066;
-		eq->deltaZ = emu->deltaZ;
+		eq->deltaZ = 0;
 //		eq->padding0070 = emu->padding0070;
 		eq->eyecolor1 = emu->eyecolor1;
 //		eq->unknown0115[24] = emu->unknown0115[24];
@@ -651,13 +703,22 @@ ENCODE(OP_NewSpawn) {
 		eq->GuildID = emu->guildID;
 		eq->title = emu->face;
 //		eq->unknown0274 = emu->unknown0274;
-		//eq->helm = emu->helm;
-		if(emu->race > 473)
+		eq->anim_type = 0x64;
+		eq->npc_armor_graphic = 0xFF;
+		eq->npc_helm_graphic = emu->helm;
+		if(emu->race > 250)
 			eq->race = 1;
 		else
 			eq->race = emu->race;
+
+		eq->GuildID = emu->guildID;
+		if(eq->GuildID == 0)
+			eq->GuildID = 0xFFFF;
+
+		if(eq->guildrank == 0)
+			eq->guildrank = 0xFF;
 //		eq->unknown0288 = emu->unknown0288;
-		strcpy(eq->Surname, emu->lastName);
+		strncpy(eq->Surname, emu->lastName, 20);
 		eq->walkspeed = emu->walkspeed;
 //		eq->unknown0328 = emu->unknown0328;
 		//eq->is_pet = emu->is_pet;
@@ -683,13 +744,12 @@ ENCODE(OP_NewSpawn) {
 		if (emu->beard == 99)      {eq->beard = 0;}
 		if (emu->beardcolor == 99) {eq->beardcolor = 0;}
 		*/
-
-	}
-	EncryptZoneSpawnPacket(in->pBuffer, in->size);
-
-	//kill off the emu structure and send the eq packet.
+	EQApplicationPacket* outapp = new EQApplicationPacket(OP_NewSpawn, sizeof(structs::Spawn_Struct));
+	outapp->pBuffer = new uchar[sizeof(structs::Spawn_Struct)];
+	outapp->size = DeflatePacket((unsigned char*)__packet->pBuffer, __packet->size, outapp->pBuffer, sizeof(structs::Spawn_Struct));
+	EncryptZoneSpawnPacket(outapp->pBuffer, outapp->size);
+	dest->FastQueuePacket(&outapp, ack_req);
 	delete[] __emu_buffer;
-	dest->FastQueuePacket(&in, ack_req);
 }
 
 

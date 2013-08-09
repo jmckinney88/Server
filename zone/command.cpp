@@ -926,7 +926,7 @@ void command_testspawn(Client *c, const Seperator *sep)
 		else {
 			strcpy((char*) (&((uint8*) &ns->spawn)[atoi(sep->arg[1])]), sep->argplus[2]);
 		}
-		EncryptSpawnPacket(outapp);
+		//EncryptSpawnPacket(outapp);
 		c->FastQueuePacket(&outapp);
 	}
 	else

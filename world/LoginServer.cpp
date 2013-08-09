@@ -69,13 +69,14 @@ extern uint32 numzones;
 extern uint32 numplayers;
 extern volatile bool	RunLoops;
 
-LoginServer::LoginServer(const char* iAddress, uint16 iPort, const char* Account, const char* Password)
+LoginServer::LoginServer(const char* iAddress, uint16 iPort, const char* Account, const char* Password, uint8 Type)
 : statusupdate_timer(LoginServer_StatusUpdateInterval)
 {
 	strn0cpy(LoginServerAddress,iAddress,256);
 	LoginServerPort = iPort;
 	strn0cpy(LoginAccount,Account,31);
 	strn0cpy(LoginPassword,Password,31);
+	LoginServerType = Type;
 	CanAccountUpdate = false;
 	tcpc = new EmuTCPConnection(true);
 	tcpc->SetPacketMode(EmuTCPConnection::packetModeLogin);
@@ -239,7 +240,7 @@ bool LoginServer::Connect() {
 
 	if (tcpc->ConnectIP(LoginServerIP, LoginServerPort, errbuf)) {
 		_log(WORLD__LS, "Connected to Loginserver: %s:%d",LoginServerAddress,LoginServerPort);
-		if (minilogin)
+		if (minilogin || LoginServerType == 1)
 			SendInfo();
 		else
 			SendNewInfo();
@@ -274,19 +275,27 @@ void LoginServer::SendInfo() {
 void LoginServer::SendNewInfo() {
 	uint16 port;
 	const WorldConfig *Config=WorldConfig::get();
+
 	ServerPacket* pack = new ServerPacket;
-	pack->opcode = ServerOP_LSInfo;
-	pack->size = sizeof(ServerLSInfo_Struct);
+	pack->opcode = ServerOP_NewLSInfo;
+	pack->size = sizeof(ServerNewLSInfo_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
-	ServerLSInfo_Struct* lsi = (ServerLSInfo_Struct*) pack->pBuffer;
+	ServerNewLSInfo_Struct* lsi = (ServerNewLSInfo_Struct*) pack->pBuffer;
 	strcpy(lsi->protocolversion, EQEMU_PROTOCOL_VERSION);
 	strcpy(lsi->serverversion, LOGIN_VERSION);
 	strcpy(lsi->name, Config->LongName.c_str());
+	strcpy(lsi->shortname, Config->ShortName.c_str());
 	strcpy(lsi->account, LoginAccount);
 	strcpy(lsi->password, LoginPassword);
-	strcpy(lsi->address, Config->WorldAddress.c_str());
-	SendPacket(pack);
+	if (Config->WorldAddress.length())
+			strcpy(lsi->remote_address, Config->WorldAddress.c_str());
+	if (Config->LocalAddress.length())
+			strcpy(lsi->local_address, Config->LocalAddress.c_str());
+	else {
+			tcpc->GetSockName(lsi->local_address,&port);
+			WorldConfig::SetLocalAddress(lsi->local_address);
+	}
 	SendPacket(pack);
 	delete pack;
 }

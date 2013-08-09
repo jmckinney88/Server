@@ -2034,11 +2034,11 @@ ENCODE(OP_ZoneSpawns)
 			Position->deltaX = emu->deltaX;
 			Position->deltaHeading = emu->deltaHeading;
 			Position->deltaY = emu->deltaY;
-			Position->y = emu->y;
+			Position->y = FloatToEQ19(emu->y);
 			Position->animation = emu->animation;
-			Position->heading = emu->heading;
-			Position->x = emu->x;
-			Position->z = emu->z;
+			Position->heading = FloatToEQ19(emu->heading);
+			Position->x = FloatToEQ19(emu->x);
+			Position->z = FloatToEQ19(emu->z);
 			Position->deltaZ = emu->deltaZ;
 
 			Buffer += sizeof(structs::Spawn_Struct_Position);

@@ -11,6 +11,7 @@
 #include "../Item.h"
 #include "SoF_structs.h"
 #include "../rulesys.h"
+#include "../MiscFunctions.h"
 
 #include <iostream>
 #include <sstream>
@@ -869,15 +870,15 @@ ENCODE(OP_ZoneSpawns) {
 		eq->targetable = 1; //New Field - Toggle Targetable on or off - 0 = off, 1 = on
 		eq->NPC = emu->NPC;
 		eq->targetable_with_hotkey = 1;//New Field - Toggle Targetable on or off - 0 = off, 1 = on
-		eq->x = emu->x;
+		eq->x = FloatToEQ19(emu->x);
 		eq->deltaX = emu->deltaX;
 		eq->deltaY = emu->deltaY;
-		eq->z = emu->z;
+		eq->z = FloatToEQ19(emu->z);
 		eq->deltaHeading = emu->deltaHeading;
-		eq->y = emu->y;
+		eq->y = FloatToEQ19(emu->y);
 		eq->deltaZ = emu->deltaZ;
 		eq->animation = emu->animation;
-		eq->heading = emu->heading;
+		eq->heading = FloatToEQ19(emu->heading);
 		eq->spawnId = emu->spawnId;
 		eq->nonvisible = 0;
 		strcpy(eq->name, emu->name);

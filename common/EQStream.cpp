@@ -1586,7 +1586,7 @@ void FragmentGroupList::Remove(int16 remove_seq)
 
 EQOldStream::EQOldStream(sockaddr_in in, int fd_sock)
 {
-	pm_state = EQStreamState::ESTABLISHED;
+	pm_state = ESTABLISHED;
 	dwLastCACK = 0;
 	dwFragSeq  = 0;
 	listening_socket = fd_sock;
@@ -1632,7 +1632,7 @@ EQOldStream::EQOldStream(sockaddr_in in, int fd_sock)
 
 EQOldStream::EQOldStream()
 {
-	pm_state = EQStreamState::ESTABLISHED;
+	pm_state = ESTABLISHED;
 	dwLastCACK = 0;
 	dwFragSeq  = 0;
 	listening_socket = 0;		    
@@ -1689,24 +1689,11 @@ EQOldStream::~EQOldStream()
 void EQOldStream::IncomingARSP(uint16 dwARSP) 
 { 
 	EQOldPacket* pack = 0;
-	if(!ResendQueue.empty())
+	while (!ResendQueue.empty() && dwARSP - ResendQueue.top()->dwARQ >= 0)
 	{
-		
-		pack = ResendQueue.front();
-		while (!ResendQueue.empty() && pack && dwARSP - pack->dwARQ >= 0)
-		{
-			_log(NET__DEBUG,"Removing %i from resendQueue", pack->dwARQ);
-			packetspending--;
-			ResendQueue.pop();
-			safe_delete(pack);
-			if(!ResendQueue.empty())
-			pack = ResendQueue.front();
-			else
-			{
-			pack = NULL;
-			break;
-			}
-		}
+		pack = ResendQueue.pop();
+		packetspending--;
+		safe_delete(pack);
 	}
 	if (ResendQueue.empty())
 	{
@@ -1832,7 +1819,7 @@ bool EQOldStream::ProcessPacket(EQOldPacket* pack, bool from_buffer)
 	{
 		if(!pm_state)
 		{
-			pm_state = EQStreamState::CLOSING;
+			pm_state = CLOSING;
 			_SendDisconnect(); // Agz: Added a close packet
 		}
 	}
@@ -1871,8 +1858,6 @@ bool EQOldStream::ProcessPacket(EQOldPacket* pack, bool from_buffer)
 			uint32 sizep = 0;
 			buf = fragment_group->AssembleData(&sizep);
 			EQRawApplicationPacket *app = new EQRawApplicationPacket(fragment_group->GetOpcode(), buf, sizep);
-			fragment_group_list.Remove(pack->fraginfo.dwSeq);
-			safe_delete(buf);
 			OutQueue.push(app);
 			return true;
 		}
@@ -1932,7 +1917,7 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 	int16 restore_op = 0x0000;
 
 	/************ PM STATE = NOT ACTIVE ************/
-	if(pm_state == EQStreamState::CLOSING)
+	if(pm_state == CLOSING)
 	{
 		EQOldPacket *pack = new EQOldPacket();
 
@@ -1945,12 +1930,10 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 		pack->dwARQ             = SACK.dwARQ;// try this instead
 
 		//AddAck(pack);
-		MOutboundQueue.lock();
 		MySendPacketStruct *p = new MySendPacketStruct;
 
 		p->buffer = pack->ReturnPacket(&p->size);
 		SendQueue.push(p);
-		MOutboundQueue.unlock();
 		SACK.dwGSQ++; 
 		safe_delete(pack);//delete pack;
 
@@ -1968,7 +1951,7 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 	/************ IF opcode is == 0xFFFF it is a request for pure ack creation ************/
 	if(app->GetRawOpcode() == 0xFFFF)
 	{
-		EQOldPacket *pack = new EQOldPacket(app->pBuffer, app->size);
+		EQOldPacket *pack = new EQOldPacket();
 
 		if(!SACK.dwGSQ)
 		{
@@ -1978,14 +1961,12 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 			SACK.dbASQ_high         = 1;            //Current sequence number
 			SACK.dbASQ_low          = 0;            //Current sequence number
 		}
-		MOutboundQueue.lock();
 		MySendPacketStruct *p = new MySendPacketStruct;
 		pack->HDR.b2_ARSP    = 1;
 		pack->dwARSP         = dwLastCACK;//CACK.dwARQ;
 		pack->dwSEQ = SACK.dwGSQ++;
 		p->buffer = pack->ReturnPacket(&p->size);
 		SendQueue.push(p);  
-		MOutboundQueue.unlock();
 
 		no_ack_sent_timer->Disable();
 		safe_delete(pack);//delete pack;
@@ -2001,7 +1982,7 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 	{
 		while(fragsleft--)
 		{
-			EQOldPacket *pack = new EQOldPacket(app->pBuffer, app->size);
+			EQOldPacket *pack = new EQOldPacket();
 			MySendPacketStruct *p = new MySendPacketStruct;
 			if(!SACK.dwGSQ)
 			{
@@ -2130,10 +2111,8 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 			/************ End update timers ************/
 			                    
 			pack->dwSEQ = SACK.dwGSQ++;
-			MOutboundQueue.lock();
 			p->buffer = pack->ReturnPacket(&p->size);
 			SendQueue.push(p);
-			MOutboundQueue.unlock();
 			    
 			if(pack->HDR.a4_ASQ)
 				SACK.dbASQ_low++;
@@ -2166,28 +2145,24 @@ void EQOldStream::CheckTimers(void)
 	if (no_ack_received_timer->Check())
 	{
 		EQOldPacket* pack;
-		std::queue<EQOldPacket*> q;
-		while(!ResendQueue.empty())
+		MyQueue<EQOldPacket> q;
+		while(pack = ResendQueue.pop())
 		{
 			packetspending--;
-			pack = ResendQueue.front();
-			MySendPacketStruct *p = new MySendPacketStruct;
 			q.push(pack);
+			MySendPacketStruct *p = new MySendPacketStruct;
 			pack->dwSEQ = SACK.dwGSQ++;
 			p->buffer = pack->ReturnPacket(&p->size);
 			SendQueue.push(p);
-			ResendQueue.pop();
 		}
-		while(!q.empty())
+		while(pack = q.pop())
 		{
-			pack = q.front();
 			ResendQueue.push(pack);
 			packetspending++;
-			if(++(pack)->resend_count > 15) {
-				_log(NET__DEBUG, "Dropping client, resend_count > 15 on ARQ - %i, SEQ: %i", pack->dwARQ, pack->dwSEQ);
-				Close();
+			if(++pack->resend_count > 15) {
+				pm_state = CLOSING;
+				MakeEQPacket(0);
 			}
-			q.pop();
 		}
 		no_ack_received_timer->Start(1000);
 	}
@@ -2202,6 +2177,7 @@ void EQOldStream::CheckTimers(void)
 
 void EQOldStream::QueuePacket(const EQApplicationPacket *p, bool ack_req)
 {
+	MOutboundQueue.lock();
 	ack_req = true;	// It's broke right now, dont delete this line till fix it. =P
 
 	if(p == nullptr)
@@ -2217,10 +2193,12 @@ void EQOldStream::QueuePacket(const EQApplicationPacket *p, bool ack_req)
 	MakeEQPacket( pack2, ack_req);
 	delete p;
 	delete pack2;
+	MOutboundQueue.unlock();
 }
 
 void EQOldStream::FastQueuePacket(EQApplicationPacket **p, bool ack_req)
 {
+	MOutboundQueue.lock();
 	EQApplicationPacket *pack=*p;
 	*p = nullptr;		//clear caller's pointer.. effectively takes ownership
 
@@ -2251,6 +2229,7 @@ void EQOldStream::FastQueuePacket(EQApplicationPacket **p, bool ack_req)
 	MakeEQPacket(pack2, ack_req);
 	delete pack;
 	delete pack2;
+	MOutboundQueue.unlock();
 }
 
 EQApplicationPacket *EQOldStream::PopPacket()
@@ -2259,8 +2238,7 @@ EQApplicationPacket *EQOldStream::PopPacket()
 
 	MInboundQueue.lock();
 	if (!OutQueue.empty()) {
-		p=OutQueue.front();
-		OutQueue.pop();
+		p=OutQueue.pop();
 	}
 	MInboundQueue.unlock();
 
@@ -2278,48 +2256,44 @@ EQApplicationPacket *EQOldStream::PopPacket()
 
 void EQOldStream::InboundQueueClear()
 {
-EQApplicationPacket *p=nullptr;
+EQRawApplicationPacket *p=nullptr;
 
 	_log(NET__APP_TRACE, _L "Clearing inbound queue" __L);
 
 	MInboundQueue.lock();
-	while (!OutQueue.empty()) {
-		EQRawApplicationPacket* p = OutQueue.front();
-		if(p->pBuffer)
-			safe_delete(p->pBuffer)
+	while (p = OutQueue.pop()) {
 		safe_delete(p);
-		OutQueue.pop();
 	}
 	MInboundQueue.unlock();
 }
 
 void EQOldStream::OutboundQueueClear()
 {
-EQApplicationPacket *p=nullptr;
+	MySendPacketStruct *p=nullptr;
 
 	_log(NET__APP_TRACE, _L "Clearing outbound queue" __L);
 
 	MOutboundQueue.lock();
-	while (!SendQueue.empty()) {
-		MySendPacketStruct *p = SendQueue.front();
-		SendQueue.pop();
-		safe_delete(p->buffer);
+	while (p = SendQueue.pop()) {
+		MySendPacketStruct *p = SendQueue.pop();
+		safe_delete_array(p->buffer);
 		p->size = 0;
+		p = 0;
 	}
 	MOutboundQueue.unlock();
 }
 
 void EQOldStream::PacketQueueClear()
 {
+	EQOldPacket* p = nullptr;
 	_log(NET__APP_TRACE, _L "Clearing resend queue" __L);
 
-	MResendQueue.lock();
-	while (!ResendQueue.empty()) {
-		EQOldPacket* p = ResendQueue.front();
+	MOutboundQueue.lock();
+	while (ResendQueue.pop()) {
+		EQOldPacket* p = ResendQueue.pop();
 		safe_delete(p);
-		ResendQueue.pop();
 	}
-	MResendQueue.unlock();
+	MOutboundQueue.unlock();
 }
 
 void EQOldStream::ReceiveData(uchar* buf, int len)
@@ -2337,13 +2311,12 @@ void EQOldStream::SendPacketQueue(bool Block)
 	to.sin_port = remote_port;
 	to.sin_addr.s_addr = remote_ip;
 	MOutboundQueue.lock();
-	while(!SendQueue.empty())
+	while(p = SendQueue.pop())
 	{
-		p = SendQueue.front();
 		sendto(listening_socket, (char *) p->buffer, p->size, 0, (sockaddr*)&to, sizeof(to));
-		safe_delete(p->buffer);
-		safe_delete(p);
-		SendQueue.pop();
+		safe_delete_array(p->buffer);
+		p->size = 0;
+		p = 0;
 	}
 	// ************ Processing finished ************ //
 	MOutboundQueue.unlock();
@@ -2435,11 +2408,9 @@ EQStream::MatchState EQOldStream::CheckSignature(const EQStream::Signature *sig)
 	MInboundQueue.lock();
 	if (!OutQueue.empty()) {
 		//this is already getting hackish...
-		p = OutQueue.front();
+		p = OutQueue.top();
 		if(sig->ignore_eq_opcode != 0 && p->GetRawOpcode() == sig->ignore_eq_opcode) {
-			if(OutQueue.size() > 1) {
-				p = OutQueue.front();
-			} else {
+			if(OutQueue.empty()) {
 				p = nullptr;
 			}
 		}

@@ -17,6 +17,7 @@
 #include "../common/misc.h"
 #include "../common/Condition.h"
 #include "../common/timer.h"
+#include "queue.h"
 
 #define FLAG_COMPRESSED	0x01
 #define FLAG_ENCODED	0x04
@@ -473,8 +474,8 @@ class EQOldStream : public EQStreamInterface {
 		void OutboundQueueClear();
 		void PacketQueueClear();
 
-		std::queue<MySendPacketStruct*>			  SendQueue;	//Store packets thats on the send que
-		std::queue<EQRawApplicationPacket*>           OutQueue;	//parced packets ready to go out of this class
+		MyQueue<MySendPacketStruct>			  SendQueue;	//Store packets thats on the send que
+		MyQueue<EQRawApplicationPacket>           OutQueue;	//parced packets ready to go out of this class
 
 
 	private:
@@ -482,7 +483,7 @@ class EQOldStream : public EQStreamInterface {
 		void CheckBufferedPackets();
 
 		FragmentGroupList fragment_group_list;
-		std::queue<EQOldPacket *> ResendQueue; //Resend queue
+		MyQueue<EQOldPacket> ResendQueue; //Resend queue
 		std::vector<EQOldPacket *> buffered_packets; // Buffer of incoming packets
 
 		ACK_INFO    SACK; //Server -> client info.
@@ -496,7 +497,7 @@ class EQOldStream : public EQStreamInterface {
 
 
 		EQStreamState    pm_state;  //manager state 
-		int16  dwFragSeq;   //current fragseq
+		uint16  dwFragSeq;   //current fragseq
 		int8 debug_level;
 		bool LOG_PACKETS;
 		bool bTimeout;

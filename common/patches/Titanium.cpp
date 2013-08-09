@@ -7,6 +7,7 @@
 #include "../crc32.h"
 #include "../races.h"
 
+#include "../MiscFunctions.h"
 #include "../eq_packet_structs.h"
 #include "../StringUtil.h"
 #include "../Item.h"
@@ -504,15 +505,15 @@ ENCODE(OP_ZoneSpawns) {
 		eq->findable = emu->findable;
 //		eq->unknown0089[5] = emu->unknown0089[5];
 		eq->deltaHeading = emu->deltaHeading;
-		eq->x = emu->x;
+		eq->x = FloatToEQ19(emu->x);
 //		eq->padding0054 = emu->padding0054;
-		eq->y = emu->y;
+		eq->y = FloatToEQ19(emu->y);
 		eq->animation = emu->animation;
 //		eq->padding0058 = emu->padding0058;
-		eq->z = emu->z;
+		eq->z = FloatToEQ19(emu->z);
 		eq->deltaY = emu->deltaY;
 		eq->deltaX = emu->deltaX;
-		eq->heading = emu->heading;
+		eq->heading = FloatToEQ19(emu->heading);
 //		eq->padding0066 = emu->padding0066;
 		eq->deltaZ = emu->deltaZ;
 //		eq->padding0070 = emu->padding0070;
