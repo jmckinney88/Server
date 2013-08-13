@@ -124,54 +124,7 @@ ENCODE(OP_ZoneServerInfo) {
 	FINISH_ENCODE();
 }
 
-ENCODE(OP_ZoneEntry) {
-	SETUP_DIRECT_ENCODE(Spawn_Struct, structs::ServerZoneEntry_Struct);
-		eq->anon = emu->anon;
-		//eq->face = emu->face;
-		strcpy(eq->name, emu->name);
-		eq->zone = emu->zoneID;
-		eq->deity = emu->deity;
-		eq->haircolor = emu->haircolor;
-		eq->x = emu->x;
-		eq->y = emu->y;
-		eq->z = emu->z;
-		eq->heading = (uint8)emu->heading;
-		eq->eyecolor1 = emu->eyecolor1;
-//		eq->showhelm = emu->showhelm;
-		eq->hairstyle = emu->hairstyle;
-		//eq->beard = emu->beard;
-		eq->level = emu->level;
-		eq->beardcolor = emu->beardcolor;
-		int k;
-		for(k = 0; k < 9; k++) {
-			eq->equipment[k] = emu->equipment[k];
-			eq->colors[k].color = emu->colors[k].color;
-		}
-		eq->npc_armor_graphic = 0xFF;
-		eq->runspeed = emu->runspeed;
-		//eq->afk = emu->afk;
-		eq->guildeqid = emu->guildID;
-		//strcpy(eq->title, emu->title);
-		//eq->helm = emu->helm;
-		eq->race = emu->race;
-		strcpy(eq->Surname, emu->lastName);
-		eq->walkspeed = emu->walkspeed;
-	//	eq->is_pet = emu->is_pet;
-	//eq->light = emu->light;
-		eq->class_ = emu->class_;
-		eq->eyecolor2 = emu->eyecolor2;
-		eq->gender = emu->gender;
-	//	eq->bodytype = emu->bodytype;
-	//	eq->equip_chest2 = emu->equip_chest2;
-	//	eq->spawnId = emu->spawnId;
-	//	eq->lfg = emu->lfg;
-	//	eq->flymode = emu->flymode;
-	CRC32::SetEQChecksum(__packet->pBuffer, sizeof(structs::ServerZoneEntry_Struct));
-	_log(NET__STRUCTS, "AddPlayer Packet is %i bytes uncompressed", sizeof(structs::ServerZoneEntry_Struct));
-	
-	FINISH_ENCODE();	
-}
-
+ENCODE(OP_ZoneEntry) { ENCODE_FORWARD(OP_NewSpawn); }
 
 ENCODE(OP_PlayerProfile) {
 	SETUP_DIRECT_ENCODE(PlayerProfile_Struct, structs::PlayerProfile_Struct);
@@ -364,9 +317,12 @@ ENCODE(OP_GuildsList) {
 
 ENCODE(OP_Weather) {
 	SETUP_DIRECT_ENCODE(Weather_Struct, structs::Weather_Struct);
-	OUT(val1);
-	OUT(type);
-	OUT(mode);
+
+	if(emu->type == 0x31)
+	{
+
+	}
+	
 	FINISH_ENCODE();	
 }
 
@@ -458,6 +414,85 @@ DECODE(OP_ChannelMessage)
 	strcpy(emu->message, eq->message);
 }
 
+ENCODE(OP_MobUpdate)
+{
+
+	//consume the packet
+	EQApplicationPacket *in = *p;
+	*p = nullptr;
+
+	//store away the emu struct
+	unsigned char *__emu_buffer = in->pBuffer;
+	PlayerPositionUpdateServer_Struct *emu = (PlayerPositionUpdateServer_Struct *) __emu_buffer;
+
+	EQApplicationPacket* app = new EQApplicationPacket(OP_MobUpdate,sizeof(structs::SpawnPositionUpdates_Struct) + sizeof(structs::SpawnPositionUpdate_Struct));
+	structs::SpawnPositionUpdates_Struct* spu = (structs::SpawnPositionUpdates_Struct*)app->pBuffer;
+	
+	spu->num_updates = 1;
+	float anim_type = (float)emu->animation / 37.0f;
+	spu->spawn_update[0].anim_type = (uint8)emu->animation;
+	spu->spawn_update[0].delta_heading = (uint8)emu->delta_heading;
+	spu->spawn_update[0].delta_x = (uint32)emu->delta_x;
+	spu->spawn_update[0].delta_y = (uint32)emu->delta_y;
+	spu->spawn_update[0].delta_z = (uint32)emu->delta_z;
+	spu->spawn_update[0].spawn_id = emu->spawn_id;
+	spu->spawn_update[0].x_pos = (int16)emu->y_pos;
+	spu->spawn_update[0].y_pos = (int16)emu->x_pos;
+	spu->spawn_update[0].z_pos = (int16)emu->z_pos;
+	spu->spawn_update[0].heading = (int8)emu->heading;
+	spu->spawn_update[0].anim_type = anim_type * 7;
+	dest->FastQueuePacket(&app);
+
+	delete[] __emu_buffer;
+}
+
+ENCODE(OP_ClientUpdate)
+{
+	SETUP_DIRECT_ENCODE(PlayerPositionUpdateServer_Struct, structs::SpawnPositionUpdate_Struct);
+	OUT(spawn_id);
+	eq->x_pos = (int16)emu->y_pos;
+	OUT(delta_x);
+	OUT(delta_y);
+	OUT(z_pos);
+	OUT(delta_heading);
+	eq->y_pos = (int16)emu->x_pos;
+	OUT(delta_z);
+	eq->anim_type = (int16)emu->animation;
+	OUT(heading);
+	FINISH_ENCODE();
+}
+
+DECODE(OP_ClientUpdate)
+{
+	SETUP_DIRECT_DECODE(PlayerPositionUpdateClient_Struct, structs::SpawnPositionUpdate_Struct);
+	IN(spawn_id);
+//	IN(sequence);
+	emu->x_pos = (int16)eq->y_pos;
+	emu->y_pos = (int16)eq->x_pos;
+	emu->z_pos = (int16)eq->z_pos;
+	emu->heading = (uint8)eq->heading;
+	IN(delta_x);
+	IN(delta_y);
+	IN(delta_z);
+	IN(delta_heading);
+	emu->animation = eq->anim_type;
+	FINISH_DIRECT_DECODE();
+}
+
+DECODE(OP_TargetMouse)
+{
+	SETUP_DIRECT_DECODE(ClientTarget_Struct, structs::ClientTarget_Struct);
+	IN(new_target);
+	FINISH_DIRECT_DECODE();
+}
+
+DECODE(OP_TargetCommand)
+{
+	SETUP_DIRECT_DECODE(ClientTarget_Struct, structs::ClientTarget_Struct);
+	IN(new_target);
+	FINISH_DIRECT_DECODE();
+}
+
 ENCODE(OP_SpawnDoor) {
 	SETUP_VAR_ENCODE(Door_Struct);
 	int door_count = __packet->size/sizeof(Door_Struct);
@@ -546,7 +581,7 @@ ENCODE(OP_ZoneSpawns){
 		eq->y_pos = (int16)emu->y;
 		eq->animation = emu->animation;
 //		eq->padding0058 = emu->padding0058;
-		eq->z_pos = (int16)emu->z * 10;
+		eq->z_pos = (int16)emu->z;
 		eq->deltaY = 0;
 		eq->deltaX = 0;
 		eq->heading = (uint8)emu->heading;
@@ -639,8 +674,6 @@ ENCODE(OP_NewSpawn) {
 	SETUP_DIRECT_ENCODE(Spawn_Struct, structs::Spawn_Struct);
 	//zero out the packet. We could avoid this memset by setting all fields (including unknowns)
 	//in the loop.
-	if(emu->size < 1)
-		emu->size = 1;
 	int k = 0;
 	//do the transform...
 //		eq->unknown0000 = emu->unknown0000;

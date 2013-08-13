@@ -58,7 +58,6 @@ EQApplicationPacket *EQStreamProxy::PopPacket() {
 	EQApplicationPacket *pack = m_stream->PopPacket();
 	if(pack == nullptr)
 		return(nullptr);
-
 	//pass this packet through the struct strategy.
 	m_structs->Decode(pack);
 	return(pack);

@@ -243,10 +243,12 @@ timeval sleep_time;
 				} else {
 
 					//newstr
+					stream_itr=Streams.find(temp);
 					EQStream *curstream = NULL;
 					if(stream_itr != Streams.end())
 					curstream = stream_itr->second;
 					//oldstr
+					oldstream_itr=OldStreams.find(temp);
 					EQOldStream *oldcurstream = NULL;
 					if(oldstream_itr != OldStreams.end())
 					oldcurstream = oldstream_itr->second;

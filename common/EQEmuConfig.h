@@ -128,7 +128,7 @@ protected:
 		// Login server
 		LoginHost="eqemulator.net";
 		LoginPort=5998;
-		LoginType=1;
+		LoginType=0;
 
 		// World
 		Locked=false;

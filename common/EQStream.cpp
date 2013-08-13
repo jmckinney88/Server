@@ -1688,6 +1688,7 @@ EQOldStream::~EQOldStream()
 
 void EQOldStream::IncomingARSP(uint16 dwARSP) 
 { 
+	MOutboundQueue.lock();
 	EQOldPacket* pack = 0;
 	while (!ResendQueue.empty() && dwARSP - ResendQueue.top()->dwARQ >= 0)
 	{
@@ -1699,6 +1700,7 @@ void EQOldStream::IncomingARSP(uint16 dwARSP)
 	{
 		no_ack_received_timer->Disable();
 	}
+	MOutboundQueue.unlock();
 }
 
 void EQOldStream::IncomingARQ(uint16 dwARQ) 
@@ -1737,6 +1739,7 @@ void EQOldStream::ParceEQPacket(uint16 dwSize, uchar* pPacket)
 	if(pm_state != EQStreamState::ESTABLISHED)
 		return;
 			        
+	MInboundQueue.lock();
 	/************ DECODE PACKET ************/
 	EQOldPacket* pack = new EQOldPacket(pPacket, dwSize);
 	pack->DecodePacket(dwSize, pPacket);
@@ -1745,6 +1748,7 @@ void EQOldStream::ParceEQPacket(uint16 dwSize, uchar* pPacket)
 		safe_delete(pack);//delete pack;
 	}
 	CheckBufferedPackets();
+	MInboundQueue.unlock();
 }
 
 /*
@@ -1921,8 +1925,12 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 	{
 		EQOldPacket *pack = new EQOldPacket();
 
-		pack->dwSEQ = SACK.dwGSQ++; // Agz: Added this commented rest        
-			  
+		pack->dwSEQ = SACK.dwGSQ++; // Agz: Added this commented rest    
+		if(pack->dwSEQ == 0xFFFF)
+		{
+		SACK.dwGSQ = 1;
+		pack->dwSEQ = 1;
+		}	  
 		pack->HDR.a6_Closing    = 1;// Agz: Lets try to uncomment this line again
 		pack->HDR.a2_Closing    = 1;// and this
 		pack->HDR.a1_ARQ        = 1;// and this
@@ -1965,6 +1973,11 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 		pack->HDR.b2_ARSP    = 1;
 		pack->dwARSP         = dwLastCACK;//CACK.dwARQ;
 		pack->dwSEQ = SACK.dwGSQ++;
+		if(pack->dwSEQ == 0xFFFF)
+		{
+			SACK.dwGSQ = 1;
+			pack->dwSEQ = 1;
+		}
 		p->buffer = pack->ReturnPacket(&p->size);
 		SendQueue.push(p);  
 
@@ -2111,6 +2124,11 @@ void EQOldStream::MakeEQPacket(EQProtocolPacket* app, bool ack_req)
 			/************ End update timers ************/
 			                    
 			pack->dwSEQ = SACK.dwGSQ++;
+			if(pack->dwSEQ == 0xFFFF)
+			{
+			pack->dwSEQ = 1;
+			SACK.dwGSQ = 1;
+			}
 			p->buffer = pack->ReturnPacket(&p->size);
 			SendQueue.push(p);
 			    
@@ -2152,6 +2170,11 @@ void EQOldStream::CheckTimers(void)
 			q.push(pack);
 			MySendPacketStruct *p = new MySendPacketStruct;
 			pack->dwSEQ = SACK.dwGSQ++;
+			if(pack->dwSEQ == 0xFFFF)
+			{
+			SACK.dwGSQ = 1;
+			pack->dwSEQ = 1;
+			}
 			p->buffer = pack->ReturnPacket(&p->size);
 			SendQueue.push(p);
 		}
@@ -2242,9 +2265,15 @@ EQApplicationPacket *EQOldStream::PopPacket()
 	}
 	MInboundQueue.unlock();
 
-	//resolve the opcode if we can.
+
+	if(p)
+	{
+		if(p->GetRawOpcode() == 0 || p->GetRawOpcode() == 0xFFFF)
+		safe_delete(p);
+	}
+	//resolve the opcode if we can. do not resolve protocol packets in oldstreams
 	if(p) {
-		if(OpMgr != nullptr && *OpMgr != nullptr) {
+		if(OpMgr != nullptr && *OpMgr != nullptr && p->GetRawOpcode() != 0 && p->GetRawOpcode() != 0xFFFF) {
 			EmuOpcode emu_op = (*OpMgr)->EQToEmu(p->GetRawOpcode());
 			p->SetOpcode(emu_op);
 		}

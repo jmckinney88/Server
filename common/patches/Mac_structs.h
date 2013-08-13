@@ -2428,9 +2428,7 @@ struct PlayerProfile_Struct
 };
 
 struct Weather_Struct {
-	uint32	val1;	//generall 0x000000FF
-	uint16	type;	//0x31=rain, 0x02=snow(i think), 0 = normal
-	uint16	mode;
+uint8 bytes[8];
 };
 
 

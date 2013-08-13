@@ -94,7 +94,7 @@ CommonProfiler _cp;
 #include "AdventureManager.h"
 #include "ucs.h"
 #include "queryserv.h"
-#include <vld.h>
+//#include <vld.h>
 
 TimeoutManager timeout_manager;
 EQStreamFactory eqsf(WorldStream,9000);

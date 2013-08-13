@@ -16,5 +16,10 @@ D(OP_EnterWorld)
 D(OP_ChannelMessage)
 E(OP_ChannelMessage)
 E(OP_SpecialMesg)
+E(OP_ClientUpdate)
+D(OP_ClientUpdate)
+E(OP_MobUpdate)
+D(OP_TargetCommand)
+D(OP_TargetMouse)
 #undef E
 #undef D
